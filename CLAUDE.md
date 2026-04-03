@@ -22,6 +22,7 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 - You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
 - You **MUST** use the correct ID conventions (see Section 5) when creating files. Check existing IDs in the feature folder to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
+- You **MUST NOT** commit directly to `main` in any repo — spec-hub or workspace. All work goes on a feature branch (see `contracts/architecture/branching-strategy.md`).
 - You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
 - You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human. Do not modify contracts unilaterally.
 - You **SHOULD** prefer running multiple agents in parallel when features are independent and contracts are stable — one agent per workspace. Parallelism is the default preference; sequential is the fallback.
@@ -72,6 +73,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | `contracts/architecture/workspace-bootstrap.md` | Toolchain, Dockerfile, CI, and project structure standard for every workspace |
 | `contracts/architecture/contract-validation.md` | Schemathesis, Pact, and MSW standards for API contract testing |
 | `contracts/architecture/observability-standards.md` | Health endpoints, Prometheus metrics, structured logging (Loki), and tracing standards |
+| `contracts/architecture/branching-strategy.md` | Branch naming, commit conventions, merge strategy, and agent branching instructions |
 | `contracts/data-schema/` | Entity definitions, migrations |
 | `registry/project.yaml` | Project metadata -- domain, methodology, standards |
 | `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
@@ -136,15 +138,16 @@ IF the FS declares `depends_on` features:
 
 **Steps:**
 
-1. For each AC in the FS, produce at least one test scenario.
-2. Each scenario MUST include:
+1. Ask the human: "Should I create a feature branch `spec/{Story-ID}-{slug}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once — Phase 3 continues on the same branch.
+2. For each AC in the FS, produce at least one test scenario.
+3. Each scenario MUST include:
    - **Preconditions** -- system state before the test
    - **Action** -- what the user or system does
    - **Expected outcome** -- observable result that proves the AC is met
-3. Include both positive (happy path) and negative (error/edge case) scenarios where the AC implies them.
-4. Write the output to `TS-{next available number}.md` in the feature folder.
-5. Update `status.yaml`: set `artifacts.TS-XXX.status` to `awaiting_review`.
-6. After the human approves the TS, update `status.yaml`: set `artifacts.TS-XXX.status` to `approved` and advance `current_phase` to `3`.
+4. Include both positive (happy path) and negative (error/edge case) scenarios where the AC implies them.
+5. Write the output to `TS-{next available number}.md` in the feature folder.
+6. Update `status.yaml`: set `artifacts.TS-XXX.status` to `awaiting_review`.
+7. After the human approves the TS, update `status.yaml`: set `artifacts.TS-XXX.status` to `approved` and advance `current_phase` to `3`.
 
 **Self-verification checklist (run before presenting to human):**
 
@@ -232,12 +235,13 @@ IF the FE WP depends on new endpoints being built in the same feature:
 
 1. Navigate to the correct workspace submodule under `workspaces/`.
 2. Read the WP in full. The WP is your specification -- do not deviate from its scope.
-3. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`.
-4. Implement the feature as described. After each significant step, update `status.yaml` `last_checkpoint` with a short description of what was just completed (e.g. `"saga step 2 — reserve stock"`). This is your breadcrumb trail for session recovery.
-5. Write tests that map directly to the test scenarios listed in the WP.
-6. Verify that all tests pass.
-7. Update `status.yaml`: set `phase_4.WP-XXX.status` to `done`.
-8. If implementation reveals a spec issue (missing AC, impossible requirement, contract conflict):
+3. Ask the human: "Should I create a feature branch `feat/{Story-ID}-{WP-ID}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once per WP — do not ask again mid-implementation.
+4. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`.
+5. Implement the feature as described. After each significant step, update `status.yaml` `last_checkpoint` with a short description of what was just completed (e.g. `"saga step 2 — reserve stock"`). This is your breadcrumb trail for session recovery.
+6. Write tests that map directly to the test scenarios listed in the WP.
+7. Verify that all tests pass.
+8. Update `status.yaml`: set `phase_4.WP-XXX.status` to `done`.
+9. If implementation reveals a spec issue (missing AC, impossible requirement, contract conflict):
    - STOP implementation.
    - Add the issue to `status.yaml` `blockers` and set `phase_4.WP-XXX.status` to `blocked`.
    - Ask the human how to proceed. Do not patch around it.

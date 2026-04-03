@@ -197,6 +197,43 @@ Every `FS-XXX.md` starts with this header block:
 
 ---
 
+## Branching & Git Workflow
+
+### Branch naming
+
+| Repo | Pattern | Example |
+|---|---|---|
+| Spec-hub | `spec/{Story-ID}-{slug}` | `spec/Story-0001-guest-checkout` |
+| Workspace (backend) | `feat/{Story-ID}-{WP-ID}` | `feat/Story-0001-WP-001-BE` |
+| Workspace (frontend) | `feat/{Story-ID}-{WP-ID}` | `feat/Story-0001-WP-001-FE` |
+
+- **Spec-hub:** one branch per feature, covering Phase 2 and Phase 3. All spec artifacts (TS, WPs, status updates, contract changes) are committed there. Merged to `main` when the feature reaches Phase 4.
+- **Workspaces:** one branch per Work Package. BE and FE always get separate branches, so parallel development never causes conflicts.
+- **`main` is protected.** No direct commits — not by humans, not by agents.
+
+### Commit message convention
+
+```
+feat(Story-0001): implement guest order placement saga    ← workspace
+spec(Story-0002): generate test spec and work packages   ← spec-hub
+chore(Story-0001): bootstrap order-service workspace     ← scaffold
+```
+
+Always include the Story ID in parentheses. See `contracts/architecture/branching-strategy.md` for the full convention.
+
+### Agent behaviour
+
+Before the first commit in any repo, the agent asks:
+
+> "Should I create a feature branch `{branch-name}` for this work, or will you manage branching?"
+
+- **Yes** → the agent creates the branch and works there.
+- **You manage it** → the agent commits to whatever branch is currently active.
+
+One question, one time per feature (spec-hub) or per WP (workspace). The agent never commits directly to `main`.
+
+---
+
 ## Feature Status Tracking
 
 Every feature folder contains a `status.yaml` file that the AI agent keeps current throughout the workflow. It is the single source of truth for where a feature stands — no need to infer state from file existence.
