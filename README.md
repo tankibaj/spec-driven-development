@@ -77,10 +77,10 @@ The repo has four top-level concerns:
 
 | Directory | Purpose | When to look here |
 |---|---|---|
-| `plan/spec/` | Feature specs, test specs, work packages | You are building or reviewing a feature |
+| `plan/spec/` | Feature specs, test specs, work packages, and per-feature `status.yaml` | You are building or reviewing a feature |
 | `plan/reference/` | Glossary, personas, roles | You need domain context |
 | `contracts/` | OpenAPI specs, ADRs, data schemas | You need the technical interface between services |
-| `registry/` | project.yaml (project metadata) + routes.yaml (workspaces & WP routing) | You need to know which repo a work package targets, or the project context |
+| `registry/` | `project.yaml` (project metadata) + `routes.yaml` (workspaces & WP routing) | You need to know which repo a work package targets, or the project context |
 
 Supporting directories:
 
@@ -97,16 +97,17 @@ Supporting directories:
 ```
 spec-hub/
 ├── registry/
-│   ├── manifest.yaml              # Hub identity + connected workspaces
+│   ├── project.yaml               # Project metadata — domain, methodology, standards
 │   └── routes.yaml                # Routes work packages to workspace repos
 │
 ├── plan/
 │   ├── spec/
-│   │   └── Story-1234-{slug}/     # One folder per feature (Jira ID + slug)
+│   │   └── Story-1234-{slug}/     # One folder per feature (ticket ID + slug)
 │   │       ├── FS-XXX.md          # Feature Spec
 │   │       ├── TS-XXX.md          # Test Spec
 │   │       ├── WP-XXX-BE.md       # Backend Work Package
-│   │       └── WP-XXX-FE.md       # Frontend Work Package
+│   │       ├── WP-XXX-FE.md       # Frontend Work Package
+│   │       └── status.yaml        # Phase progress, artifact approval states, blockers
 │   └── reference/
 │       ├── glossary.md
 │       ├── personas.md
@@ -124,11 +125,11 @@ spec-hub/
 │
 ├── workspaces/                    # Part of this repo; each child is a git submodule
 │   ├── order-service/             # → git submodule (backend repo)
-│   ├── order-app/                 # → git submodule (frontend repo)
+│   ├── storefront-app/            # → git submodule (frontend repo)
 │   └── ...
 ├── CLAUDE.md                      # AI agent entry point
-├── CLAUDE.learnings.md            # Institutional memory
-└── README.md                      # This file - Human Readme
+├── CLAUDE.learnings.md            # Institutional memory (structured by category)
+└── README.md                      # This file — human-facing documentation
 ```
 
 </details>
@@ -172,11 +173,38 @@ flowchart TD
 
 To add a specification for a new feature:
 
-1. Create a folder under `plan/spec/` named `{JIRA-ID}-{slug}` (e.g. `ALBTL-5678-user-export`).
-2. **Human** authors `FS-XXX.md` -- define the goal, acceptance criteria, and status.
-3. **AI agent** derives `TS-XXX.md` -- test scenarios that trace back to each acceptance criterion. **Human reviews.**
+1. Create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `Story-0002-user-registration`).
+2. **Human** authors `FS-XXX.md` — define the goal, acceptance criteria, and status.
+3. **AI agent** derives `TS-XXX.md` — test scenarios that trace back to each acceptance criterion. Agent creates `status.yaml` to begin tracking progress. **Human reviews.**
 4. **AI agent** splits into work packages: `WP-XXX-BE.md` and/or `WP-XXX-FE.md`. Each must be self-contained. **Human reviews.**
-5. **Human** updates `registry/routes.yaml` if the feature targets a workspace not yet registered.
+5. **AI agent** implements in the target workspace, updating `status.yaml` after each significant step to maintain a recovery checkpoint.
+6. **Human** updates `registry/routes.yaml` if the feature targets a workspace not yet registered.
+
+---
+
+## Feature Status Tracking
+
+Every feature folder contains a `status.yaml` file that the AI agent keeps current throughout the workflow. It is the single source of truth for where a feature stands — no need to infer state from file existence.
+
+```yaml
+feature: Story-0001-guest-checkout
+current_phase: 4
+
+artifacts:                              # draft | awaiting_review | approved | rejected
+  FS-001:    { status: approved, date: 2026-04-03 }
+  TS-001:    { status: approved, date: 2026-04-03 }
+  WP-001-BE: { status: approved, date: 2026-04-03 }
+  WP-001-FE: { status: approved, date: 2026-04-03 }
+
+phase_4:                                # not_started | in_progress | blocked | done
+  WP-001-BE: { status: in_progress, last_checkpoint: "saga step 2 — reserve stock" }
+  WP-001-FE: { status: not_started }
+
+blockers: []
+notes: ~
+```
+
+When a session is interrupted, the agent reads `status.yaml` first and resumes from `last_checkpoint` — not from scratch.
 
 ---
 

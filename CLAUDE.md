@@ -60,6 +60,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | Path | Contains |
 |---|---|
 | `plan/spec/` | Feature specs, test specs, work packages -- one folder per feature |
+| `plan/spec/{feature}/status.yaml` | Per-feature progress file — current phase, artifact approval states, Phase 4 checkpoints, blockers |
 | `plan/reference/glossary.md` | Product glossary -- domain terminology |
 | `plan/reference/personas.md` | User personas |
 | `plan/reference/roles.md` | System roles and tenancy model |
@@ -128,6 +129,8 @@ IF no FS exists for the requested feature:
    - **Expected outcome** -- observable result that proves the AC is met
 3. Include both positive (happy path) and negative (error/edge case) scenarios where the AC implies them.
 4. Write the output to `TS-{next available number}.md` in the feature folder.
+5. Update `status.yaml`: set `artifacts.TS-XXX.status` to `awaiting_review`.
+6. After the human approves the TS, update `status.yaml`: set `artifacts.TS-XXX.status` to `approved` and advance `current_phase` to `3`.
 
 **Self-verification checklist (run before presenting to human):**
 
@@ -165,6 +168,8 @@ IF no FS exists for the requested feature:
    - **Implementation notes** -- technical guidance, patterns to follow, constraints
    - **Target workspace** -- which repo under `workspaces/` this WP is implemented in
 6. Write files to the feature folder.
+7. Update `status.yaml`: set each `artifacts.WP-XXX-BE/FE.status` to `awaiting_review`.
+8. After the human approves the WPs, update `status.yaml`: set each WP status to `approved`, advance `current_phase` to `4`, and initialise each `phase_4` entry to `{ status: not_started }`.
 
 **Self-verification checklist:**
 
@@ -195,18 +200,21 @@ IF no FS exists for the requested feature:
 
 1. Navigate to the correct workspace submodule under `workspaces/`.
 2. Read the WP in full. The WP is your specification -- do not deviate from its scope.
-3. Implement the feature as described.
-4. Write tests that map directly to the test scenarios listed in the WP.
-5. Verify that all tests pass.
-6. If implementation reveals a spec issue (missing AC, impossible requirement, contract conflict):
+3. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`.
+4. Implement the feature as described. After each significant step, update `status.yaml` `last_checkpoint` with a short description of what was just completed (e.g. `"saga step 2 — reserve stock"`). This is your breadcrumb trail for session recovery.
+5. Write tests that map directly to the test scenarios listed in the WP.
+6. Verify that all tests pass.
+7. Update `status.yaml`: set `phase_4.WP-XXX.status` to `done`.
+8. If implementation reveals a spec issue (missing AC, impossible requirement, contract conflict):
    - STOP implementation.
-   - Document the issue.
+   - Add the issue to `status.yaml` `blockers` and set `phase_4.WP-XXX.status` to `blocked`.
    - Ask the human how to proceed. Do not patch around it.
 
 **Do / Don't:**
 
 - DO implement exactly what the WP specifies, nothing more.
 - DO write tests that correspond 1:1 to the TS scenarios in the WP.
+- DO keep `status.yaml` current — it is the recovery point for interrupted sessions.
 - DON'T add features, endpoints, or behaviors not in the WP.
 - DON'T modify files in `plan/` or `contracts/` during implementation without human approval.
 
@@ -249,27 +257,43 @@ At the start of every session:
 2. Read `CLAUDE.learnings.md` for institutional memory.
 3. Read all files in `.claude/rules/` — these guardrails are active for the entire session.
 4. If the human specifies a feature, navigate to its folder under `plan/spec/`.
-5. Assess what already exists:
+5. Check for `status.yaml` in the feature folder:
 
 ```
-IF only FS exists            → Start at Phase 1 (review it).
-IF FS + TS exist             → Read both. Start at Phase 3 (generate WPs).
-IF FS + TS + WPs exist       → Read all. Start at Phase 4 (implement).
-IF nothing exists            → Ask the human to author an FS, or help draft one
-                               in /collaborate mode.
+IF status.yaml exists:
+  → Read it. Resume from the exact phase, step, and checkpoint recorded.
+  → Do not re-run steps already marked complete or approved.
+
+IF status.yaml does not exist (fallback — file-existence detection):
+  IF only FS exists            → Start at Phase 1 (review it).
+  IF FS + TS exist             → Read both. Start at Phase 3 (generate WPs).
+  IF FS + TS + WPs exist       → Read all. Start at Phase 4 (implement).
+  IF nothing exists            → Ask the human to author an FS, or help draft one
+                                 in /collaborate mode.
+  → Create status.yaml immediately to begin tracking state.
 ```
 
 6. Confirm your assessment with the human before proceeding. Example:
 
-> "I found FS-001 and TS-001 for this feature. TS-001 covers N scenarios across M acceptance criteria. No Work Packages exist yet. I'll proceed with Phase 3 (Work Package generation). Confirm?"
+> "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Resuming Phase 4 from the last checkpoint. Confirm?"
 
 ---
 
 ## 7. Institutional Memory
 
-`CLAUDE.learnings.md` holds learnings accumulated across sessions -- patterns that worked, mistakes to avoid, clarifications from humans.
+`CLAUDE.learnings.md` holds learnings accumulated across sessions. It is structured into three categories for efficient loading and scanning.
+
+### Categories
+
+| Category | What goes here |
+|---|---|
+| **Domain Rules** | Canonical facts about the domain, terminology decisions, invariants that never change |
+| **Human Preferences** | Decisions the human has made about process, style, or approach — always honour these |
+| **Technical Gotchas** | Implementation-level findings: edge cases, framework quirks, patterns that failed, non-obvious constraints |
+
+### Rules
 
 - **Read it** at the start of every session.
-- **Append to it** when you discover something that future sessions should know (e.g., a domain term that was ambiguous, a routing pattern that was non-obvious, a contract quirk).
+- **Append to the correct category** when you discover something that future sessions should know (e.g., a domain term that was ambiguous, a routing pattern that was non-obvious, a contract quirk).
 - Keep entries concise: one line per learning, prefixed with the date.
-- Do not remove existing entries.
+- Do not remove existing entries. Mark stale entries `[obsolete: reason]` if they no longer apply.
