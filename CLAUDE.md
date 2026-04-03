@@ -20,7 +20,7 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 - You **MUST** make every Work Package self-contained. An implementer reads only that WP. If they would need to read another WP, the FS, or surrounding context to complete it, the WP is incomplete.
 - You **MUST** load domain context (`plan/reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
 - You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
-- You **MUST** use the correct ID conventions (see Section 5) when creating files. Check existing IDs in the feature folder to avoid collisions.
+- You **MUST** use the correct ID conventions (see Section 6) when creating files. Check existing IDs in the feature folder to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
 - You **MUST NOT** commit directly to `main` in any repo — spec-hub or workspace. All work goes on a feature branch (see `contracts/architecture/branching-strategy.md`).
 - You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
@@ -29,7 +29,44 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 
 ---
 
-## 2. Operating Modes
+## 2. Context Loading Strategy
+
+Load only what you need, when you need it. Front-loading every document at session start dilutes attention during implementation. The goal is to hold only the WP and the rules in active memory during the core implementation loop — everything else is looked up at the moment it is relevant.
+
+### Always load at session start
+
+- `CLAUDE.md` (this file)
+- `CLAUDE.learnings.md`
+- All files in `.claude/rules/`
+- `status.yaml` for the active feature
+
+### Load when entering Phase 4
+
+- The WP being implemented — read in full, this is your specification
+- `registry/routes.yaml` — confirm the target workspace
+
+### Load on demand
+
+Read each document only when you reach the step that requires it:
+
+| When you reach this step | Load this |
+|---|---|
+| Scaffolding an empty workspace | `contracts/architecture/workspace-bootstrap.md` |
+| Implementing `/health`, `/ready`, `/metrics` | `contracts/architecture/observability-standards.md` |
+| Implementing a specific API endpoint | `contracts/api/{service}.openapi.yaml` |
+| Writing ORM models or migrations | `contracts/data-schema/{entity}.schema.md` |
+| Making the first commit | `contracts/architecture/branching-strategy.md` |
+| Running the DoD checklist | `contracts/architecture/contract-validation.md` |
+| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint.md` |
+| Adding a database migration | `.claude/skills/add-alembic-migration.md` |
+| Adding a React feature module | `.claude/skills/add-react-feature.md` |
+| Running the DoD checklist | `.claude/skills/run-dod-checklist.md` |
+
+Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
+
+---
+
+## 3. Operating Modes
 
 Switch modes using slash commands: `/collaborate` or `/autopilot`.
 
@@ -59,7 +96,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 
 ---
 
-## 3. Repository Map
+## 4. Repository Map
 
 | Path | Contains |
 |---|---|
@@ -85,9 +122,9 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 
 ---
 
-## 4. Workflow Phases
+## 5. Workflow Phases
 
-Every feature follows four phases. You may enter at any phase depending on what already exists (see Section 6: Session Resumption).
+Every feature follows four phases. You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
 
 ### Phase 1 -- Review Feature Spec
 
@@ -174,7 +211,7 @@ IF the FS declares `depends_on` features:
 1. Check `registry/routes.yaml` to identify the target workspace(s) for this feature.
 2. Check `contracts/api/`, `contracts/data-schema/` and `contracts/architecture/`for existing interfaces.
 3. If the feature requires new or updated API endpoints, data entities, or architectural decisions:
-   - Create or update the relevant files in `contracts/` (see Section 4.1: Contract Maintenance).
+   - Create or update the relevant files in `contracts/` (see Section 5.1: Contract Maintenance).
    - Present contract changes to the human for review before continuing.
 4. Split the TS into backend (`WP-XXX-BE.md`) and/or frontend (`WP-XXX-FE.md`) work packages.
 5. Each WP MUST include:
@@ -287,7 +324,7 @@ When a WP is `blocked` and the human resolves the issue:
 
 ---
 
-## 4.1. Contract Maintenance
+## 5.1. Contract Maintenance
 
 Creating and updating contracts is a normal part of the SDD workflow. When a feature requires new or changed interfaces, handle them as follows:
 
@@ -302,7 +339,7 @@ All contract changes MUST be presented to the human for review before you procee
 
 ---
 
-## 5. ID Conventions
+## 6. ID Conventions
 
 | Artifact | Pattern | Example |
 |---|---|---|
@@ -316,7 +353,7 @@ Before creating any artifact, list existing files in the feature folder (for FS/
 
 ---
 
-## 6. Session Resumption
+## 7. Session Resumption
 
 At the start of every session:
 
@@ -343,43 +380,6 @@ IF status.yaml does not exist (fallback — file-existence detection):
 6. Confirm your assessment with the human before proceeding. Example:
 
 > "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Operating in /collaborate mode. Resuming Phase 4 from the last checkpoint. Confirm?"
-
----
-
-## 7. Context Loading Strategy
-
-Load only what you need, when you need it. Front-loading every document at session start dilutes attention during implementation. The goal is to hold only the WP and the rules in active memory during the core implementation loop — everything else is looked up at the moment it is relevant.
-
-### Always load at session start
-
-- `CLAUDE.md` (this file)
-- `CLAUDE.learnings.md`
-- All files in `.claude/rules/`
-- `status.yaml` for the active feature
-
-### Load when entering Phase 4
-
-- The WP being implemented — read in full, this is your specification
-- `registry/routes.yaml` — confirm the target workspace
-
-### Load on demand
-
-Read each document only when you reach the step that requires it:
-
-| When you reach this step | Load this |
-|---|---|
-| Scaffolding an empty workspace | `contracts/architecture/workspace-bootstrap.md` |
-| Implementing `/health`, `/ready`, `/metrics` | `contracts/architecture/observability-standards.md` |
-| Implementing a specific API endpoint | `contracts/api/{service}.openapi.yaml` |
-| Writing ORM models or migrations | `contracts/data-schema/{entity}.schema.md` |
-| Making the first commit | `contracts/architecture/branching-strategy.md` |
-| Running the DoD checklist | `contracts/architecture/contract-validation.md` |
-| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint.md` |
-| Adding a database migration | `.claude/skills/add-alembic-migration.md` |
-| Adding a React feature module | `.claude/skills/add-react-feature.md` |
-| Running the DoD checklist | `.claude/skills/run-dod-checklist.md` |
-
-Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
 
 ---
 
