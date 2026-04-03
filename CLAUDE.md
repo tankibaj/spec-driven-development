@@ -256,6 +256,18 @@ IF the FE WP depends on new endpoints being built in the same feature:
 - [ ] No secrets, tokens, or credentials in code or test fixtures
 - [ ] `status.yaml` `phase_4.WP-XXX.status` set to `done`
 
+**Failure Escalation:**
+
+If you attempt to fix a failing test, type error, or linter error and fail 3 consecutive times:
+
+1. Stop attempting. Do not continue cycling through fixes.
+2. Revert the affected file to its last working state.
+3. Add the issue to `status.yaml` `blockers` with a clear description of what you tried and what the error says.
+4. Set `phase_4.WP-XXX.status` to `blocked`.
+5. Ask the human for guidance.
+
+Three failed attempts means you are missing context that is not in the WP. More attempts will not help.
+
 **Unblocking a blocked WP:**
 
 When a WP is `blocked` and the human resolves the issue:
@@ -330,11 +342,48 @@ IF status.yaml does not exist (fallback — file-existence detection):
 
 6. Confirm your assessment with the human before proceeding. Example:
 
-> "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Resuming Phase 4 from the last checkpoint. Confirm?"
+> "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Operating in /collaborate mode. Resuming Phase 4 from the last checkpoint. Confirm?"
 
 ---
 
-## 7. Institutional Memory
+## 7. Context Loading Strategy
+
+Load only what you need, when you need it. Front-loading every document at session start dilutes attention during implementation. The goal is to hold only the WP and the rules in active memory during the core implementation loop — everything else is looked up at the moment it is relevant.
+
+### Always load at session start
+
+- `CLAUDE.md` (this file)
+- `CLAUDE.learnings.md`
+- All files in `.claude/rules/`
+- `status.yaml` for the active feature
+
+### Load when entering Phase 4
+
+- The WP being implemented — read in full, this is your specification
+- `registry/routes.yaml` — confirm the target workspace
+
+### Load on demand
+
+Read each document only when you reach the step that requires it:
+
+| When you reach this step | Load this |
+|---|---|
+| Scaffolding an empty workspace | `contracts/architecture/workspace-bootstrap.md` |
+| Implementing `/health`, `/ready`, `/metrics` | `contracts/architecture/observability-standards.md` |
+| Implementing a specific API endpoint | `contracts/api/{service}.openapi.yaml` |
+| Writing ORM models or migrations | `contracts/data-schema/{entity}.schema.md` |
+| Making the first commit | `contracts/architecture/branching-strategy.md` |
+| Running the DoD checklist | `contracts/architecture/contract-validation.md` |
+| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint.md` |
+| Adding a database migration | `.claude/skills/add-alembic-migration.md` |
+| Adding a React feature module | `.claude/skills/add-react-feature.md` |
+| Running the DoD checklist | `.claude/skills/run-dod-checklist.md` |
+
+Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
+
+---
+
+## 8. Institutional Memory
 
 `CLAUDE.learnings.md` holds learnings accumulated across sessions. It is structured into three categories for efficient loading and scanning.
 
