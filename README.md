@@ -174,11 +174,26 @@ flowchart TD
 To add a specification for a new feature:
 
 1. Create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `Story-0002-user-registration`).
-2. **Human** authors `FS-XXX.md` — define the goal, acceptance criteria, and status.
+2. **Human** authors `FS-XXX.md` — define the goal, acceptance criteria, and status. Include `Depends on` and `Blocks` fields in the header if this feature has dependencies (see below).
 3. **AI agent** derives `TS-XXX.md` — test scenarios that trace back to each acceptance criterion. Agent creates `status.yaml` to begin tracking progress. **Human reviews.**
 4. **AI agent** splits into work packages: `WP-XXX-BE.md` and/or `WP-XXX-FE.md`. Each must be self-contained. **Human reviews.**
 5. **AI agent** implements in the target workspace, updating `status.yaml` after each significant step to maintain a recovery checkpoint.
 6. **Human** updates `registry/routes.yaml` if the feature targets a workspace not yet registered.
+
+### Feature Spec header format
+
+Every `FS-XXX.md` starts with this header block:
+
+```markdown
+**Feature folder:** `Story-XXXX-{slug}`
+**Status:** Draft | Approved
+**Author:** Product Team
+**Last updated:** YYYY-MM-DD
+**Depends on:** — (none) | `FS-002` — needs authenticated session endpoint
+**Blocks:** — (none) | `FS-005` — order history requires orders to exist
+```
+
+`Depends on` tells the agent which other features must be complete (or mockable) before this one can be fully implemented. If a dependency is still in progress, the frontend WP will use contract mocks against the dependency's OpenAPI spec until the real implementation is available.
 
 ---
 

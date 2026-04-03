@@ -22,6 +22,9 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 - You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
 - You **MUST** use the correct ID conventions (see Section 5) when creating files. Check existing IDs in the feature folder to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
+- You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
+- You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human. Do not modify contracts unilaterally.
+- You **SHOULD** prefer running multiple agents in parallel when features are independent and contracts are stable — one agent per workspace. Parallelism is the default preference; sequential is the fallback.
 
 ---
 
@@ -66,6 +69,9 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | `plan/reference/roles.md` | System roles and tenancy model |
 | `contracts/api/` | OpenAPI specs, one per microservice |
 | `contracts/architecture/` | ADRs, patterns, system design |
+| `contracts/architecture/workspace-bootstrap.md` | Toolchain, Dockerfile, CI, and project structure standard for every workspace |
+| `contracts/architecture/contract-validation.md` | Schemathesis, Pact, and MSW standards for API contract testing |
+| `contracts/architecture/observability-standards.md` | Health endpoints, Prometheus metrics, structured logging (Loki), and tracing standards |
 | `contracts/data-schema/` | Entity definitions, migrations |
 | `registry/project.yaml` | Project metadata -- domain, methodology, standards |
 | `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
@@ -114,6 +120,14 @@ IF the FS is complete and all ACs are testable:
 IF no FS exists for the requested feature:
   → Ask the human to author one. You MAY help draft it in /collaborate mode,
     but the human owns the final FS.
+
+IF the FS declares `depends_on` features:
+  → Read status.yaml for each dependency.
+  → If all dependencies are phase_4 status: done → proceed normally.
+  → If any dependency is in_progress → note it to the human. FE WP may proceed
+    using contract mocks (MSW / Prism) against the dependency's OpenAPI spec.
+  → If any dependency has no status.yaml or is pre-phase-4 → ask the human
+    whether to block or proceed with mocks.
 ```
 
 ### Phase 2 -- Generate Test Spec
@@ -181,11 +195,29 @@ IF no FS exists for the requested feature:
 - [ ] ACs and test scenarios are copied into the WP verbatim, not just referenced by ID
 - [ ] Any new or updated contracts have been reviewed by the human
 
+### Implementation Order
+
+After generating WPs, state the recommended implementation order:
+
+```
+IF contracts for all required endpoints already exist and are stable:
+  → Recommend PARALLEL implementation.
+  → Add a note to the FE WP: "Mock the backend using Prism or MSW against
+    contracts/api/{service}.openapi.yaml during development and testing.
+    Switch to the real backend URL once WP-XXX-BE is done."
+
+IF the FE WP depends on new endpoints being built in the same feature:
+  → Recommend BE-first, FE-second as the fallback.
+  → Note in the FE WP which specific endpoints to mock and reference
+    the OpenAPI spec for response shapes.
+```
+
 **Do / Don't:**
 
 - DO copy relevant ACs and test scenarios into each WP verbatim. The WP must stand alone.
 - DO specify the target workspace repo explicitly.
 - DO create or update contracts when the feature requires new APIs, data models, or architectural decisions.
+- DO state the implementation order (parallel with mocks, or BE-first / FE-second) at the end of Phase 3.
 - DON'T create a WP that depends on reading another WP to understand scope.
 - DON'T contradict an existing contract without proposing an ADR.
 - DON'T proceed to Phase 4 until the human has reviewed and approved the WPs.
@@ -209,6 +241,25 @@ IF no FS exists for the requested feature:
    - STOP implementation.
    - Add the issue to `status.yaml` `blockers` and set `phase_4.WP-XXX.status` to `blocked`.
    - Ask the human how to proceed. Do not patch around it.
+
+**Definition of Done — run before marking a WP `done` in `status.yaml`:**
+
+- [ ] All TS scenarios from the WP have passing automated tests
+- [ ] Linter passes with zero errors (`ruff check` for backend / `biome check` for frontend)
+- [ ] Type checker passes with zero errors (`mypy` / `tsc --noEmit`)
+- [ ] Contract validation passes (see `contracts/architecture/contract-validation.md`)
+- [ ] Observability requirements met: `/health`, `/ready`, `/metrics`, structured logging (see `contracts/architecture/observability-standards.md`)
+- [ ] No secrets, tokens, or credentials in code or test fixtures
+- [ ] `status.yaml` `phase_4.WP-XXX.status` set to `done`
+
+**Unblocking a blocked WP:**
+
+When a WP is `blocked` and the human resolves the issue:
+
+1. Re-read the updated WP in full — treat it as a new spec.
+2. Resume from the `last_checkpoint` recorded in `status.yaml` — do not re-run completed steps.
+3. Clear the resolved entry from `status.yaml` `blockers`.
+4. Set `phase_4.WP-XXX.status` back to `in_progress`.
 
 **Do / Don't:**
 
