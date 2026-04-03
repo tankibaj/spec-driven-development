@@ -1,0 +1,392 @@
+openapi: "3.1.0"
+
+info:
+  title: Order Service API
+  version: "1.0.0"
+  description: >
+    Manages order creation, lifecycle transitions, and payment coordination.
+    All endpoints require a valid tenant context via the `X-Tenant-ID` header.
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production
+
+tags:
+  - name: Checkout
+    description: Guest and authenticated checkout flows
+  - name: Orders
+    description: Order retrieval and lifecycle management
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Guest Session ──────────────────────────────────────────────────────────
+  /checkout/guest/sessions:
+    post:
+      operationId: createGuestSession
+      summary: Create a guest checkout session
+      tags: [Checkout]
+      description: >
+        Initialises a new Guest Session. Returns a session token to be included
+        in subsequent checkout requests. The session expires after 24 hours of
+        inactivity.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart_id:
+                  type: string
+                  format: uuid
+                  description: ID of an existing anonymous cart to attach to this session.
+      responses:
+        "201":
+          description: Guest session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ── Order Placement ────────────────────────────────────────────────────────
+  /checkout/guest/orders:
+    post:
+      operationId: placeGuestOrder
+      summary: Place a guest order
+      tags: [Checkout]
+      description: >
+        Validates the cart, reserves stock, creates a Payment Intent, and
+        places the order atomically. Requires a valid guest session token.
+        Idempotent when the same `Idempotency-Key` header is provided.
+      security:
+        - guestSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceGuestOrderRequest"
+      responses:
+        "201":
+          description: Order placed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Conflict — one or more items are out of stock.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockConflictError"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ── Order Retrieval ────────────────────────────────────────────────────────
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      summary: Get an order by ID
+      tags: [Orders]
+      description: >
+        Returns full order details. Accessible to the owning Customer,
+        any merchant admin role, and platform ops.
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Order found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders (merchant / platform roles only)
+      tags: [Orders]
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/OrderStatus"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Paginated list of orders.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderPage"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Components
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    guestSession:
+      type: apiKey
+      in: header
+      name: X-Guest-Session-Token
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The tenant this request belongs to.
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+      description: >
+        Client-generated token for safe retries. Repeat the same key to get
+        the original response without creating a duplicate order.
+
+  schemas:
+
+    GuestSession:
+      type: object
+      required: [id, token, expires_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+          description: Opaque token to include in `X-Guest-Session-Token`.
+        expires_at:
+          type: string
+          format: date-time
+
+    PlaceGuestOrderRequest:
+      type: object
+      required: [email, shipping_address, shipping_method_id, payment_method]
+      properties:
+        email:
+          type: string
+          format: email
+        shipping_address:
+          $ref: "#/components/schemas/Address"
+        shipping_method_id:
+          type: string
+          format: uuid
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethodInput"
+
+    Address:
+      type: object
+      required: [line1, city, postal_code, country_code]
+      properties:
+        line1:
+          type: string
+          maxLength: 100
+        line2:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country_code:
+          type: string
+          minLength: 2
+          maxLength: 2
+          description: ISO 3166-1 alpha-2 country code.
+
+    PaymentMethodInput:
+      type: object
+      required: [type, token]
+      properties:
+        type:
+          type: string
+          enum: [card, digital_wallet]
+        token:
+          type: string
+          description: Tokenised payment instrument from the payment gateway SDK.
+
+    Order:
+      type: object
+      required: [id, reference, status, lines, total, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+          example: "ORD-20240415-A3K9"
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderLine"
+        subtotal:
+          type: integer
+          description: Order subtotal in minor currency units (e.g. cents).
+        shipping_cost:
+          type: integer
+        tax:
+          type: integer
+        total:
+          type: integer
+          description: Order total in minor currency units.
+        shipping_address:
+          $ref: "#/components/schemas/Address"
+        created_at:
+          type: string
+          format: date-time
+
+    OrderLine:
+      type: object
+      required: [sku_id, quantity, unit_price, subtotal]
+      properties:
+        sku_id:
+          type: string
+          format: uuid
+        product_name:
+          type: string
+        variant_label:
+          type: string
+          description: Human-readable variant description (e.g. "Blue / XL").
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price:
+          type: integer
+          description: Unit price in minor currency units at time of order.
+        subtotal:
+          type: integer
+
+    OrderStatus:
+      type: string
+      enum: [pending, confirmed, processing, shipped, delivered, cancelled]
+
+    OrderPage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            per_page:
+              type: integer
+
+    StockConflictError:
+      type: object
+      required: [code, message, conflicts]
+      properties:
+        code:
+          type: string
+          example: "STOCK_CONFLICT"
+        message:
+          type: string
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              sku_id:
+                type: string
+                format: uuid
+              requested:
+                type: integer
+              available:
+                type: integer
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
+
+  responses:
+    BadRequest:
+      description: The request is malformed or missing required fields.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: The requested resource does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    UnprocessableEntity:
+      description: The request is well-formed but contains semantic errors.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

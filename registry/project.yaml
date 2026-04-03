@@ -1,0 +1,29 @@
+# Project-level metadata — what this product is, why it exists, and how the
+project:
+  name: spec-hub
+  version: "1.0.0"
+
+  # ── Product identity ────────────────────────────────────────────────────────
+  domain: e-commerce
+  description: >
+    Multi-tenant e-commerce platform covering storefront, order management,
+    inventory, and transactional notifications.
+
+  goals:
+    - Enable merchants to sell online with minimal setup.
+    - Provide customers with a fast, friction-free shopping experience.
+    - Give operations teams full visibility and control over orders and stock.
+
+  # ── Engineering methodology ─────────────────────────────────────────────────
+  methodology: Spec Driven Development (SDD)
+  sdd_maturity: 2          # 1 Vibe Coding | 2 Spec-First | 3 Spec-Anchored | 4 Spec-as-Source
+
+  # ── Standards & conventions ─────────────────────────────────────────────────
+  api_style: REST
+  api_spec_format: OpenAPI 3.1
+  schema_format: Markdown (structured)
+  language_defaults:
+    backend: python
+    frontend: typescript
+  framework_defaults:
+    frontend: react

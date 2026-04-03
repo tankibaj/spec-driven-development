@@ -1,0 +1,175 @@
+openapi: "3.1.0"
+
+info:
+  title: Notification Service API
+  version: "1.0.0"
+  description: >
+    Sends transactional notifications (email, SMS) triggered by platform events.
+    Intended for internal service-to-service use only. Not exposed publicly.
+
+servers:
+  - url: https://internal.example.com/v1
+    description: Internal network only
+
+tags:
+  - name: Notifications
+    description: Send and query notifications
+
+paths:
+
+  /notifications:
+    post:
+      operationId: sendNotification
+      summary: Send a transactional notification
+      tags: [Notifications]
+      description: >
+        Dispatches a notification to the specified recipient using the
+        chosen channel and template. Idempotent when the same
+        `Idempotency-Key` is provided.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendNotificationRequest"
+      responses:
+        "202":
+          description: Notification accepted for delivery.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationReceipt"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /notifications/{notificationId}:
+    get:
+      operationId: getNotification
+      summary: Get notification delivery status
+      tags: [Notifications]
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notification status returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationReceipt"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+
+  parameters:
+    TenantID:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+
+  schemas:
+
+    SendNotificationRequest:
+      type: object
+      required: [channel, template_id, recipient, payload]
+      properties:
+        channel:
+          type: string
+          enum: [email, sms]
+        template_id:
+          type: string
+          description: >
+            Identifier of the notification template to use.
+            Templates are managed in the Notification Service configuration.
+          example: order_confirmation
+        recipient:
+          type: object
+          required: [address]
+          properties:
+            address:
+              type: string
+              description: >
+                Email address for `email` channel; E.164 phone number for `sms`.
+            name:
+              type: string
+              description: Optional display name (used in email salutation).
+        payload:
+          type: object
+          additionalProperties: true
+          description: >
+            Template variable values. Keys and types depend on the template.
+            Example for `order_confirmation`:
+              { "order_reference": "ORD-20240415-A3K9", "total": "€49.99" }
+
+    NotificationReceipt:
+      type: object
+      required: [id, status, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, sent, delivered, failed]
+        channel:
+          type: string
+        template_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Request is malformed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnprocessableEntity:
+      description: Request is semantically invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

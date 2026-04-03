@@ -1,0 +1,204 @@
+# Specification Hub
+
+> Specs live here. Code lives elsewhere. This is the single source of truth for *what* we build and *why*.
+
+---
+
+## What Is This Repo?
+
+We practice **Spec Driven Development (SDD)** -- every feature is specified before it is coded. This repository holds those specifications, along with API contracts, architecture decisions, and the routing config that connects specs to the repos where code gets written.
+
+No production code lives here.
+
+---
+
+## Getting Started
+
+**New to the team?** Here is the shortest path to orientation:
+
+1. Read this README to understand the repo structure and workflow.
+2. Browse `plan/spec/` -- pick any feature folder to see a real spec, its test scenarios, and the work packages derived from it.
+3. Check `plan/reference/` for the product glossary, user personas, and role definitions.
+4. If you need to understand cross-service contracts (API schemas, data models, architecture decisions), look in `contracts/`.
+
+**AI agents:** your entry point is `CLAUDE.md`, loaded automatically on every session.
+
+### Setup
+
+Clone the repo with all workspace submodules:
+
+```bash
+git clone --recurse-submodules <repo-url>
+```
+
+If you already cloned without `--recurse-submodules`, initialize them after the fact:
+
+```bash
+git submodule init
+git submodule update
+```
+
+To add a new workspace submodule (e.g. a new microservice or frontend app):
+
+```bash
+git submodule add <workspace-repo-url> workspaces/<service-name>
+```
+
+---
+
+## How a Feature Goes From Idea to Code
+
+```mermaid
+flowchart TD
+    FS["Feature Spec (FS-001): Goals + Acceptance Criteria"] --> TS["Test Spec (TS-001) - Test scenarios derived from FS"]
+    TS --> BE["Work Package — Backend (WP-001-BE)"]
+    TS --> FE["Work Package — Frontend (WP-001-FE)"]
+    BE --> BR["Backend Repo (via git submodule)"]
+    FE --> FR["Frontend Repo (via git submodule)"]
+```
+
+**Who does what:**
+
+| Step | Owner | Reviewer |
+|---|---|---|
+| Feature Spec (FS) | Human | -- |
+| Test Spec (TS) | AI agent | Human |
+| Work Packages (WP) | AI agent | Human |
+
+Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review before anything moves forward.
+
+Every work package is **self-contained** -- an implementer should be able to complete it without reading the rest of the spec tree.
+
+---
+
+## Where Things Live
+
+The repo has four top-level concerns:
+
+| Directory | Purpose | When to look here |
+|---|---|---|
+| `plan/spec/` | Feature specs, test specs, work packages | You are building or reviewing a feature |
+| `plan/reference/` | Glossary, personas, roles | You need domain context |
+| `contracts/` | OpenAPI specs, ADRs, data schemas | You need the technical interface between services |
+| `registry/` | project.yaml (project metadata) + routes.yaml (workspaces & WP routing) | You need to know which repo a work package targets, or the project context |
+
+Supporting directories:
+
+| Directory | Purpose |
+|---|---|
+| `.claude/commands/` | Slash command definitions for the AI agent |
+| `.claude/rules/` | Agent guardrails — loaded and enforced on every session |
+| `.claude/skills/` | Reusable agent skill definitions |
+| `workspaces/` | Part of this repo; each service/app inside is a git submodule pointing to its own repo |
+
+<details>
+<summary>Full directory tree</summary>
+
+```
+spec-hub/
+├── registry/
+│   ├── manifest.yaml              # Hub identity + connected workspaces
+│   └── routes.yaml                # Routes work packages to workspace repos
+│
+├── plan/
+│   ├── spec/
+│   │   └── Story-1234-{slug}/     # One folder per feature (Jira ID + slug)
+│   │       ├── FS-XXX.md          # Feature Spec
+│   │       ├── TS-XXX.md          # Test Spec
+│   │       ├── WP-XXX-BE.md       # Backend Work Package
+│   │       └── WP-XXX-FE.md       # Frontend Work Package
+│   └── reference/
+│       ├── glossary.md
+│       ├── personas.md
+│       └── roles.md
+│
+├── contracts/
+│   ├── api/                       # OpenAPI specs (one per microservice)
+│   ├── architecture/              # ADRs, patterns, system design
+│   └── data-schema/               # Entity definitions, migrations
+│
+├── .claude/
+│   ├── commands/                  # Slash command definitions (/autopilot, /new-spec, /review-spec)
+│   ├── rules/                     # Agent guardrails (loaded every session)
+│   └── skills/                    # Reusable agent skill definitions
+│
+├── workspaces/                    # Part of this repo; each child is a git submodule
+│   ├── order-service/             # → git submodule (backend repo)
+│   ├── order-app/                 # → git submodule (frontend repo)
+│   └── ...
+├── CLAUDE.md                      # AI agent entry point
+├── CLAUDE.learnings.md            # Institutional memory
+└── README.md                      # This file - Human Readme
+```
+
+</details>
+
+---
+
+## Hub and Workspace Architecture
+
+```mermaid
+flowchart TD
+    subgraph HUB["Spec Hub (this repo)"]
+        plan["plan/ — specs & work packages"]
+        contracts["contracts/ — APIs & schemas"]
+        registry["registry/ — routing config"]
+        claude[".claude/ — AI agent config"]
+    end
+
+    HUB -- "WP-XXX-BE" --> BE
+    HUB -- "WP-XXX-FE" --> FE
+
+    subgraph BE["Backend Repos"]
+        bs1["order-service"]
+        bs2["inventory-service"]
+        bs3["..."]
+    end
+
+    subgraph FE["Frontend Repos"]
+        fa1["order-app"]
+        fa2["inventory-app"]
+        fa3["..."]
+    end
+```
+
+- **Spec Hub** (this repo) -- holds specs, contracts, AI config, and routing. Zero code.
+- **Workspaces** -- the `workspaces/` directory is part of this repo, but each service or app inside it is a separate git submodule pointing to its own repository. This is where engineers and AI agents implement work packages.
+- **Registry** (`registry/routes.yaml`) -- the routing layer that maps each work package to its target workspace.
+
+---
+
+## Writing a New Spec
+
+To add a specification for a new feature:
+
+1. Create a folder under `plan/spec/` named `{JIRA-ID}-{slug}` (e.g. `ALBTL-5678-user-export`).
+2. **Human** authors `FS-XXX.md` -- define the goal, acceptance criteria, and status.
+3. **AI agent** derives `TS-XXX.md` -- test scenarios that trace back to each acceptance criterion. **Human reviews.**
+4. **AI agent** splits into work packages: `WP-XXX-BE.md` and/or `WP-XXX-FE.md`. Each must be self-contained. **Human reviews.**
+5. **Human** updates `registry/routes.yaml` if the feature targets a workspace not yet registered.
+
+---
+
+## ID Conventions
+
+| Artifact | Pattern | Example |
+|---|---|---|
+| Feature Spec | `FS-XXX` | `FS-001` |
+| Test Spec | `TS-XXX` | `TS-001` |
+| Backend Work Package | `WP-XXX-BE` | `WP-001-BE` |
+| Frontend Work Package | `WP-XXX-FE` | `WP-001-FE` |
+| Architecture Decision | `ADR-XXX` | `ADR-001` |
+
+---
+
+## SDD Maturity Levels
+
+SDD is adopted incrementally. We are currently at **Level 2**.
+
+| Level | Name | What it means |
+|---|---|---|
+| 1 | Vibe Coding | Ad-hoc development, no formal spec |
+| 2 | **Spec-First (current)** | Specs written before implementation |
+| 3 | Spec-Anchored | Specs versioned, reviewed, and linked to CI/CD |
+| 4 | Spec-as-Source | Specs generate tests, contracts, and scaffolding automatically |
