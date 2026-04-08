@@ -20,6 +20,7 @@
 
 - 2026-04-08: `/new-spec` replaced by `/draft-feature-spec` skill (`.claude/skills/draft-feature-spec/SKILL.md`) following the Anthropic recommended skill format (YAML frontmatter + supporting files). The old `.claude/commands/new-spec.md` is deprecated. The skill helps the human draft a Feature Spec from scratch — the human reviews and owns the final FS.
 - 2026-04-08: Feature Spec template lives at `.claude/skills/draft-feature-spec/template.md` — includes Anatomy table, AC quality criteria, standardised Testable line formats (API / UI / System), and the full FS markdown template with guidance comments.
+- 2026-04-08: All skills migrated to Anthropic directory format (`{name}/SKILL.md` with YAML frontmatter). Flat `.md` skill files are no longer used. Implementation skills (add-fastapi-endpoint, add-alembic-migration, add-react-feature) are auto-loadable by Claude. The run-dod-checklist skill has `disable-model-invocation: true` since it runs commands with side effects.
 
 ---
 

@@ -1,3 +1,8 @@
+---
+name: add-alembic-migration
+description: Add a database migration with Alembic in a backend workspace. Use when adding or modifying database tables during Phase 4.
+---
+
 # Skill: Add an Alembic Migration
 
 Use this skill when adding or modifying a database table in a backend workspace.

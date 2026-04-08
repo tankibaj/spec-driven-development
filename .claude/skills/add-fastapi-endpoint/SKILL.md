@@ -1,3 +1,8 @@
+---
+name: add-fastapi-endpoint
+description: Add a new API endpoint to a FastAPI backend workspace. Use when implementing REST API routes in a Python backend during Phase 4.
+---
+
 # Skill: Add a FastAPI Endpoint
 
 Use this skill when implementing a new API endpoint in a backend workspace.

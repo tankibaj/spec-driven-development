@@ -57,10 +57,10 @@ Read each document only when you reach the step that requires it:
 | Writing ORM models or migrations | `contracts/data-schema/{entity}.schema.md` |
 | Making the first commit | `contracts/architecture/branching-strategy.md` |
 | Running the DoD checklist | `contracts/architecture/contract-validation.md` |
-| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint.md` |
-| Adding a database migration | `.claude/skills/add-alembic-migration.md` |
-| Adding a React feature module | `.claude/skills/add-react-feature.md` |
-| Running the DoD checklist | `.claude/skills/run-dod-checklist.md` |
+| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint/SKILL.md` |
+| Adding a database migration | `.claude/skills/add-alembic-migration/SKILL.md` |
+| Adding a React feature module | `.claude/skills/add-react-feature/SKILL.md` |
+| Running the DoD checklist | `.claude/skills/run-dod-checklist/SKILL.md` |
 | Drafting a new Feature Spec | `.claude/skills/draft-feature-spec/SKILL.md` |
 
 Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.

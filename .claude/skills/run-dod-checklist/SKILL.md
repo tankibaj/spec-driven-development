@@ -1,3 +1,9 @@
+---
+name: run-dod-checklist
+description: Run the Definition of Done checklist before marking a Work Package as done. Executes linters, type checks, tests, and contract validation.
+disable-model-invocation: true
+---
+
 # Skill: Run the Definition of Done Checklist
 
 Run these commands before marking any WP `done` in `status.yaml`.

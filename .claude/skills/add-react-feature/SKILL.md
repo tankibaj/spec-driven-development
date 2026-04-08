@@ -1,3 +1,8 @@
+---
+name: add-react-feature
+description: Add a new feature module to a React frontend workspace. Use when implementing UI features with TypeScript, Zustand, and MSW during Phase 4.
+---
+
 # Skill: Add a React Feature Module
 
 Use this skill when implementing a new user-facing feature in a frontend workspace.
