@@ -205,7 +205,7 @@ components:
 
     PlaceGuestOrderRequest:
       type: object
-      required: [email, shipping_address, shipping_method_id, payment_method]
+      required: [email, shipping_address, shipping_method_id, payment_method, lines]
       properties:
         email:
           type: string
@@ -217,6 +217,23 @@ components:
           format: uuid
         payment_method:
           $ref: "#/components/schemas/PaymentMethodInput"
+        lines:
+          type: array
+          minItems: 1
+          description: >
+            Items to order. There is no separate cart service — the storefront
+            passes order lines explicitly. Each line references a SKU and a quantity.
+          items:
+            type: object
+            required: [sku_id, quantity]
+            properties:
+              sku_id:
+                type: string
+                format: uuid
+                description: The SKU to order.
+              quantity:
+                type: integer
+                minimum: 1
 
     Address:
       type: object

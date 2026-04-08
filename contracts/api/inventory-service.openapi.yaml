@@ -168,6 +168,33 @@ paths:
         "409":
           description: Reservation not found or already expired.
 
+  /stock/reservations/{reservationId}/release:
+    post:
+      operationId: releaseReservation
+      summary: Release (cancel) a stock reservation
+      tags: [Stock]
+      description: >
+        Saga compensation step. Called by the order-service when payment fails
+        after stock has been reserved. Decrements the `reserved` counter and
+        deletes the reservation record.
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Reservation released successfully.
+        "404":
+          description: Reservation not found (already released or never existed — treat as success).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
 
   parameters:

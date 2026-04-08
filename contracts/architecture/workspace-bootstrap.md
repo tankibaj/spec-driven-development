@@ -16,19 +16,24 @@ Phase 4 when the workspace directory is empty.
 
 | Concern | Tool | Version |
 |---|---|---|
-| Framework | FastAPI | `^0.111` |
-| ASGI server | Uvicorn | `^0.29` |
+| Framework | FastAPI | `^0.135` |
+| ASGI server | Uvicorn | `^0.43` |
 | ORM | SQLAlchemy (async) | `^2.0` |
-| DB driver | asyncpg (PostgreSQL) | `^0.29` |
-| Migrations | Alembic | `^1.13` |
-| Validation | Pydantic v2 | `^2.7` |
-| HTTP client | httpx | `^0.27` |
+| DB driver | asyncpg (PostgreSQL) | `^0.31` |
+| Migrations | Alembic | `^1.18` |
+| Validation | Pydantic v2 | `^2.12` |
+| Settings | pydantic-settings | `^2.13` |
+| HTTP client | httpx | `^0.28` |
 | Package manager | uv | latest |
-| Linter / formatter | Ruff | `^0.4` |
-| Type checker | mypy | `^1.10` |
-| Test runner | pytest + pytest-asyncio | `^8.x` |
+| Linter / formatter | Ruff | `^0.15` |
+| Type checker | mypy | `^1.20` |
+| Test runner | pytest + pytest-asyncio | `^9.0` + `^1.3` |
 | Test HTTP client | httpx (AsyncClient) | — |
-| Contract tests | Schemathesis | `^3.x` |
+| Contract tests | Schemathesis | `^4.14` |
+| Metrics | prometheus-fastapi-instrumentator | `^7.1` |
+| Structured logging | python-json-logger | `^4.1` |
+
+**Runtime:** Python 3.13, Docker image `python:3.13-slim`
 
 ### 1.2 Project Structure
 
@@ -52,12 +57,12 @@ workspaces/{service-name}/
 │   ├── conftest.py              # Shared fixtures (app, db, client)
 │   ├── unit/                    # Pure logic tests — no I/O
 │   ├── integration/             # DB + service layer tests (real DB in Docker)
-│   └── contract/                # Schemathesis + Pact tests
+│   └── contract/                # Schemathesis tests
 ├── alembic/
 │   ├── env.py
 │   └── versions/
 ├── Dockerfile
-├── docker-compose.yml           # Local dev: app + postgres + redis
+├── docker-compose.yml           # Service + postgres + redis
 ├── pyproject.toml
 ├── .env.example
 └── README.md
@@ -69,32 +74,33 @@ workspaces/{service-name}/
 [project]
 name = "{service-name}"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
-  "fastapi>=0.111",
-  "uvicorn[standard]>=0.29",
+  "fastapi>=0.135",
+  "uvicorn[standard]>=0.43",
   "sqlalchemy[asyncio]>=2.0",
-  "asyncpg>=0.29",
-  "alembic>=1.13",
-  "pydantic>=2.7",
-  "pydantic-settings>=2.2",
-  "httpx>=0.27",
-  "prometheus-fastapi-instrumentator>=6.1",
-  "python-json-logger>=2.0",
+  "asyncpg>=0.31",
+  "alembic>=1.18",
+  "pydantic>=2.12",
+  "pydantic-settings>=2.13",
+  "httpx>=0.28",
+  "prometheus-fastapi-instrumentator>=7.1",
+  "python-json-logger>=4.1",
+  "redis>=5.0",
 ]
 
 [dependency-groups]
 dev = [
-  "pytest>=8",
-  "pytest-asyncio>=0.23",
-  "ruff>=0.4",
-  "mypy>=1.10",
-  "schemathesis>=3",
+  "pytest>=9",
+  "pytest-asyncio>=1.3",
+  "ruff>=0.15",
+  "mypy>=1.20",
+  "schemathesis>=4.14",
 ]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -112,16 +118,17 @@ testpaths = ["tests"]
 
 ```dockerfile
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM python:3.12-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /app
 
 RUN pip install uv
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-editable
+COPY pyproject.toml ./
+# Generate lock file then install production deps (no pre-existing lock required)
+RUN uv lock && uv sync --frozen --no-dev --no-editable
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
-FROM python:3.12-slim AS runtime
+FROM python:3.13-slim AS runtime
 WORKDIR /app
 
 # Non-root user for security
@@ -143,7 +150,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### 1.5 `docker-compose.yml` (local dev)
+### 1.5 `docker-compose.yml` (per-service dev)
 
 ```yaml
 services:
@@ -159,7 +166,7 @@ services:
         condition: service_healthy
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
@@ -173,7 +180,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "6379:6379"
     healthcheck:
@@ -192,18 +199,20 @@ LOG_LEVEL=INFO
 SECRET_KEY=change-me-in-production
 
 # Database
-DATABASE_URL=postgresql+asyncpg://app:app@localhost:5432/app
+DATABASE_URL=postgresql+asyncpg://app:app@postgres:5432/app
 
 # Redis
-REDIS_URL=redis://localhost:6379/0
+REDIS_URL=redis://redis:6379/0
 
 # Tenant
 DEFAULT_TENANT_ID=00000000-0000-0000-0000-000000000001
 
-# External services (set to mock URLs in development)
-INVENTORY_SERVICE_URL=http://localhost:8001
-NOTIFICATION_SERVICE_URL=http://localhost:8002
+# External services (set to service names when running via docker compose)
+INVENTORY_SERVICE_URL=http://inventory-service:8001
+NOTIFICATION_SERVICE_URL=http://notification-service:8002
 ```
+
+> **Note:** All URLs use Docker service hostnames, not localhost. Nothing runs outside containers.
 
 ### 1.7 GitHub Actions CI (`.github/workflows/ci.yml`)
 
@@ -221,7 +230,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
       - run: uv sync --frozen
@@ -232,38 +241,11 @@ jobs:
   test:
     name: Unit & integration tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: app
-          POSTGRES_PASSWORD: app
-          POSTGRES_DB: app
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U app"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync --frozen
-      - run: uv run alembic upgrade head
-        env:
-          DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
-      - run: uv run pytest tests/unit tests/integration -v --tb=short
-        env:
-          DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
-          REDIS_URL: redis://localhost:6379/0
+      - uses: astral-sh/setup-uv@v6
+      - name: Run tests in Docker
+        run: docker compose run --rm app uv run pytest tests/unit tests/integration -v --tb=short
 
   contract:
     name: Contract validation
@@ -271,15 +253,9 @@ jobs:
     needs: [test]
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync --frozen
-      - name: Start service
-        run: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 &
-        env:
-          DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app
-          REDIS_URL: redis://localhost:6379/0
-      - name: Wait for service
-        run: sleep 5
+      - uses: astral-sh/setup-uv@v6
+      - name: Start service stack
+        run: docker compose up -d --wait
       - name: Run Schemathesis
         run: |
           uv run schemathesis run ../../contracts/api/{service}.openapi.yaml \
@@ -294,7 +270,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v6
         with:
           context: .
           push: false
@@ -310,17 +286,19 @@ jobs:
 
 | Concern | Tool | Version |
 |---|---|---|
-| Build tool | Vite | `^5` |
-| Framework | React | `^18` |
-| Language | TypeScript | `^5.4` |
-| Linter / formatter | Biome | `^1.7` |
-| Test runner | Vitest | `^1.6` |
-| Component tests | Testing Library (React) | `^15` |
+| Build tool | Vite | `^8` |
+| Framework | React | `^19` |
+| Language | TypeScript | `^6` |
+| Linter / formatter | Biome | `^2.4` |
+| Test runner | Vitest | `^4.1` |
+| Component tests | Testing Library (React) | `^16` |
 | API mocking (dev + test) | MSW (Mock Service Worker) | `^2` |
-| API client | openapi-fetch | `^0.9` |
-| State management | Zustand | `^4` |
-| Routing | React Router v6 | `^6` |
-| HTTP types | Generated from OpenAPI via `openapi-typescript` | — |
+| API client | openapi-fetch | `^0.17` |
+| State management | Zustand | `^5` |
+| Routing | React Router v7 | `^7` |
+| HTTP types | Generated from OpenAPI via `openapi-typescript` v7 | — |
+
+**Runtime:** Node.js 22 LTS, Docker image `node:22-alpine`
 
 ### 2.2 Project Structure
 
@@ -382,7 +360,7 @@ workspaces/{app-name}/
 
 ```dockerfile
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -392,7 +370,7 @@ COPY . .
 RUN npm run build
 
 # ── Runtime stage (nginx) ─────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS runtime
+FROM nginx:1.28-alpine AS runtime
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -448,7 +426,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
       - run: npm ci
       - run: npx biome check .
@@ -461,25 +439,25 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
       - run: npm ci
       - run: npm test -- --reporter=verbose
 
   build:
-    name: Production build
+    name: Production build + Docker
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
       - run: npm ci
       - run: npm run build
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v6
         with:
           context: .
           push: false
@@ -501,3 +479,5 @@ When entering Phase 4 for a WP whose workspace directory is empty:
 6. Then begin implementing the WP on top of the scaffold.
 
 Do not deviate from the toolchain above without an ADR. Consistency across workspaces is more valuable than local optimisation.
+
+> **Container-first rule:** All services run inside Docker. No production code or integration tests should assume a local Python/Node runtime. The `DATABASE_URL` and `REDIS_URL` must use Docker service hostnames. Tests are run via `docker compose run --rm <service> uv run pytest`.
