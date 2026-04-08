@@ -13,7 +13,7 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 
 ### Hard Rules
 
-- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review -- the human decides what goes into the FS.
+- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. Creating an initial draft via the `/draft-feature-spec` skill is permitted — the human reviews and owns the final version. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review -- the human decides what goes into the FS.
 - You **MUST NOT** write production code inside the spec-hub root. Code belongs in workspace submodules only (`workspaces/<service>/`).
 - You **MUST** ensure every acceptance criterion (AC) in a Feature Spec maps to at least one test scenario in the Test Spec. No gaps.
 - You **MUST** ensure every test scenario in the Test Spec traces back to an AC. No orphan scenarios.
@@ -61,6 +61,7 @@ Read each document only when you reach the step that requires it:
 | Adding a database migration | `.claude/skills/add-alembic-migration.md` |
 | Adding a React feature module | `.claude/skills/add-react-feature.md` |
 | Running the DoD checklist | `.claude/skills/run-dod-checklist.md` |
+| Drafting a new Feature Spec | `.claude/skills/draft-feature-spec/SKILL.md` |
 
 Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
 
@@ -114,7 +115,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | `contracts/data-schema/` | Entity definitions, migrations |
 | `registry/project.yaml` | Project metadata -- domain, methodology, standards |
 | `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
-| `.claude/commands/` | Slash command definitions (`/autopilot`, `/new-spec`, `/review-spec`) |
+| `.claude/commands/` | Slash command definitions (`/autopilot`, `/review-spec`) |
 | `.claude/rules/` | Agent guardrails — enforced on every session |
 | `.claude/skills/` | Reusable agent skill definitions |
 | `workspaces/` | Git submodules -- each child is a separate implementation repo |
@@ -157,8 +158,8 @@ IF the FS is complete and all ACs are testable:
   → Proceed to Phase 2 when human approves.
 
 IF no FS exists for the requested feature:
-  → Ask the human to author one. You MAY help draft it in /collaborate mode,
-    but the human owns the final FS.
+  → Load `.claude/skills/draft-feature-spec/SKILL.md` and follow it to help the human
+    draft the FS. The human reviews and owns the final version.
 
 IF the FS declares `depends_on` features:
   → Read status.yaml for each dependency.
