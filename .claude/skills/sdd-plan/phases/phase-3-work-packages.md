@@ -1,0 +1,137 @@
+# Phase 3: Work Package Generation
+
+This procedure is part of the `sdd-plan` skill. Follow these steps after Phase 2 (Test Spec) is complete.
+
+> **Remember:** Copy ACs and TS scenarios VERBATIM — never paraphrase or reference by ID. Max 3 ACs per WP. One workspace per WP. Include contract excerpts directly — the implementation agent reads only the WP. State dependency order explicitly.
+
+---
+
+## Step 3.1: Workspace Mapping
+
+Read `registry/routes.yaml` (loaded in Step 1). For each AC in the FS, identify which workspace(s) implement it:
+
+| AC | Workspace | Rationale |
+|---|---|---|
+| AC-001 | order-service (BE) | API endpoint creation |
+| AC-001 | storefront-app (FE) | Initiates session from UI |
+| AC-002 | storefront-app (FE) | Client-side form validation |
+| AC-002 | order-service (BE) | Server-side input validation |
+
+Some ACs naturally split across BE + FE. This is expected — the same AC may appear in both a BE WP and an FE WP, with each WP containing the full AC text.
+
+Present mapping to human: "Here's how ACs map to workspaces. Confirm before I split into WPs."
+
+---
+
+## Step 3.2: AC-to-WP Splitting
+
+Apply the splitting guide (loaded in Step 1). Key rules:
+
+- **1 AC per WP is ideal.** Maximum 3 ACs per WP.
+- **One workspace per WP.** Never mix BE and FE.
+- **Group only tightly coupled ACs** that cannot be tested independently.
+- **Split when:** different workspace, different feature area, >3 ACs, or the agent would need to hold multiple feature areas in context.
+
+Present the split plan:
+
+```
+WP-XXX-BE: AC-001, AC-002, ..., AC-NNN → workspaces/{service-id}
+WP-XXX-FE: AC-001 (FE), AC-002 (FE), ... → workspaces/{app-id}
+```
+
+**Wait for human approval of the split before generating WP content.**
+
+---
+
+## Step 3.3: Contract Preparation
+
+Check if the feature requires new or updated contracts:
+
+1. Scan `contracts/api/` — do all endpoints referenced by ACs exist?
+2. Scan `contracts/data-schema/` — do all entities referenced by ACs exist?
+3. If new contracts are needed: create them in `contracts/`
+4. If existing contracts need updating: update them
+5. If updates **contradict** existing contracts: propose an ADR in `contracts/architecture/`
+
+**Present all contract changes to the human for review before continuing.**
+
+If no contract changes needed, state: "All referenced contracts exist and are up to date. No changes needed."
+
+---
+
+## Step 3.4: Generate Each WP
+
+For each WP in the approved split plan:
+
+1. **Header** — Feature, Target workspace, Status, Generated date
+2. **Objective** — One paragraph: what this WP delivers
+3. **Acceptance Criteria** — Copy VERBATIM from FS. Only the ACs assigned to this WP. Include the full behavioral description and the `Testable:` line.
+4. **Test Scenarios** — Copy VERBATIM from TS. Only the scenarios that trace to this WP's ACs. Use the compact format (Preconditions/Action/Expected on concise lines).
+5. **Relevant Contracts** — Excerpt the specific OpenAPI paths, request/response schemas, and data schemas this WP needs. Include enough detail that the implementer does NOT need to read `contracts/`.
+6. **Implementation Notes** — Technical guidance specific to the workspace:
+   - For BE: project structure, tech stack, saga/orchestration patterns, DB models, external client patterns, test mocking patterns (e.g., `respx` for Python)
+   - For FE: component structure, state management, routing, error handling, mock strategy (e.g., MSW)
+7. **Definition of Done** — Checklist specific to this WP:
+   - All TS scenarios from this WP have passing tests
+   - Linter passes (`ruff check` for BE / `biome check` for FE)
+   - Type checker passes (`mypy` for BE / `tsc --noEmit` for FE)
+   - Observability endpoints working (BE only)
+   - No secrets in code
+8. **Implementation Order** — Suggested build sequence within this WP
+
+Use the appropriate template (loaded in Step 1):
+- Backend WPs: `templates/wp-be-template.md`
+- Frontend WPs: `templates/wp-fe-template.md`
+
+---
+
+## Step 3.5: Dependency Analysis
+
+Map dependencies between all WPs:
+
+```
+DEPENDENCY ORDER:
+1. WP-XXX-BE — no dependencies, can start immediately
+2. WP-XXX-FE — depends on WP-XXX-BE for real endpoints; can start with mocks
+
+PARALLEL OPPORTUNITIES:
+- WP-XXX-BE and WP-XXX-FE can run simultaneously if FE uses Prism/MSW mocks
+  against contracts/api/{service}.openapi.yaml
+```
+
+State explicitly:
+- Which WPs can run in parallel (with mocks)
+- Which WPs must be sequential
+- When FE should switch from mock to real endpoint: "Switch to real backend URL once WP-XXX-BE is deployed."
+
+Include the dependency summary in each WP file so the implementation agent knows its position in the execution order.
+
+---
+
+## Step 3.6: Assemble and Present
+
+1. Run the verification checklist below
+2. Present ALL artifacts to the human together: the TS from Phase 2 and every WP, with the implementation order recommendation
+3. **STOP. Wait for human to review and approve both the TS and WPs.**
+
+---
+
+## Verification Checklist — Work Packages
+
+Run before presenting. Every item must pass.
+
+- [ ] Every test scenario in the TS is covered by at least one WP
+- [ ] No scenario is split across multiple WPs without being fully present in each
+- [ ] Each WP is self-contained — an implementer can complete it reading only this file
+- [ ] Target workspace is specified and exists in `registry/routes.yaml`
+- [ ] ACs are copied into the WP verbatim, not just referenced by ID
+- [ ] TS scenarios are copied into the WP verbatim, not just referenced by ID
+- [ ] Contract excerpts are included directly in BE WPs (not just linked)
+- [ ] No WP has more than 3 ACs
+- [ ] Each WP targets exactly one workspace
+- [ ] Dependency order between WPs is stated explicitly
+- [ ] Parallel opportunities are marked where applicable
+- [ ] Contract changes (if any) have been reviewed by the human
+- [ ] Implementation notes include project structure, tech stack, and test patterns
+- [ ] Definition of Done checklist is present in each WP
+- [ ] No AC from the FS is left unassigned to a WP

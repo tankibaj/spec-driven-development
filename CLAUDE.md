@@ -61,7 +61,10 @@ Read each document only when you reach the step that requires it:
 | Adding a database migration | `.claude/skills/add-alembic-migration/SKILL.md` |
 | Adding a React feature module | `.claude/skills/add-react-feature/SKILL.md` |
 | Running the DoD checklist | `.claude/skills/run-dod-checklist/SKILL.md` |
-| Drafting a new Feature Spec | `.claude/skills/draft-feature-spec/SKILL.md` |
+| Drafting a Feature Concept (PDR) | `.claude/skills/sdd-feature-concept/SKILL.md` |
+| Drafting a Feature Spec with IA | `.claude/skills/sdd-feature-spec/SKILL.md` |
+| Generating TS + Work Packages | `.claude/skills/sdd-plan/SKILL.md` |
+| Drafting a new Feature Spec (legacy) | `.claude/skills/draft-feature-spec/SKILL.md` |
 
 Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
 
@@ -125,11 +128,41 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 
 ## 5. Workflow Phases
 
-Every feature follows four phases. You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
+Every feature follows five phases (0 through 4). You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
 
-### Phase 1 -- Review Feature Spec
+### Artifact Lifecycle
 
-**Trigger:** A human has authored or updated an `FS-XXX.md` in a feature folder, or requests help creating one.
+All spec artifacts follow this lifecycle, tracked in `status.yaml`:
+
+```
+draft → awaiting_review → approved
+                        → rejected (human provides feedback, agent revises, returns to awaiting_review)
+```
+
+No artifact advances to the next phase until it reaches `approved`. The implementation agent verifies all prerequisites are `approved` before starting Phase 4.
+
+### Phase 0 -- Feature Concept (PDR)
+
+**Trigger:** A human wants to explore a new feature idea before committing to a full spec.
+
+**Steps:**
+
+1. Load `.claude/skills/sdd-feature-concept/SKILL.md` and follow the skill workflow.
+2. Help the human articulate the *what* and *why* — problem statement, proposed solution, success criteria, and scope boundaries.
+3. Write `PDR-XXX.md` to the feature folder.
+4. Update `status.yaml`: set `artifacts.PDR-XXX.status` to `awaiting_review`.
+5. After the human approves, update `status.yaml`: set `artifacts.PDR-XXX.status` to `approved`.
+
+**Do / Don't:**
+
+- DO keep the PDR focused on intent and scope — no implementation details.
+- DO include explicit "out of scope" boundaries to prevent scope creep in later phases.
+- DON'T proceed to Phase 1 until the human has approved the PDR.
+- DON'T skip Phase 0 if the human wants it — but the human may choose to start directly at Phase 1 with an existing FS.
+
+### Phase 1 -- Feature Spec + Impact Analysis
+
+**Trigger:** A human has authored or updated an `FS-XXX.md` in a feature folder, requests help creating one, or the PDR has been approved.
 
 **Steps:**
 
@@ -154,12 +187,18 @@ IF ACs reference APIs or data models:
   → Flag any contradictions or missing contracts.
 
 IF the FS is complete and all ACs are testable:
-  → Confirm readiness to the human.
-  → Proceed to Phase 2 when human approves.
+  → Generate the Impact Analysis (IA-XXX.md):
+    - Cross-check ACs against contracts/api/ and contracts/data-schema/.
+    - Identify affected services, new/changed endpoints, data model changes.
+    - Flag any contract contradictions or missing contracts.
+  → Update status.yaml: set artifacts.FS-XXX.status and artifacts.IA-XXX.status
+    to awaiting_review.
+  → STOP. Wait for human to approve both FS and IA before proceeding to Phase 2.
 
 IF no FS exists for the requested feature:
-  → Load `.claude/skills/draft-feature-spec/SKILL.md` and follow it to help the human
-    draft the FS. The human reviews and owns the final version.
+  → Load `.claude/skills/sdd-feature-spec/SKILL.md` and follow it to help the human
+    draft the FS and IA. The human reviews and owns the final version.
+  → (Legacy alternative: `.claude/skills/draft-feature-spec/SKILL.md`)
 
 IF the FS declares `depends_on` features:
   → Read status.yaml for each dependency.
@@ -172,7 +211,7 @@ IF the FS declares `depends_on` features:
 
 ### Phase 2 -- Generate Test Spec
 
-**Trigger:** Human confirms the FS is ready (all ACs are clear and testable).
+**Trigger:** Human approves the FS and IA (all ACs are clear and testable).
 
 **Steps:**
 
@@ -185,7 +224,7 @@ IF the FS declares `depends_on` features:
 4. Include both positive (happy path) and negative (error/edge case) scenarios where the AC implies them.
 5. Write the output to `TS-{next available number}.md` in the feature folder.
 6. Update `status.yaml`: set `artifacts.TS-XXX.status` to `awaiting_review`.
-7. After the human approves the TS, update `status.yaml`: set `artifacts.TS-XXX.status` to `approved` and advance `current_phase` to `3`.
+7. Proceed directly to Phase 3 — the human reviews TS and WPs together.
 
 **Self-verification checklist (run before presenting to human):**
 
@@ -201,11 +240,10 @@ IF the FS declares `depends_on` features:
 - DO group scenarios by AC for readability.
 - DO include edge cases (null inputs, permission boundaries, concurrency).
 - DON'T invent acceptance criteria that aren't in the FS. If you think one is missing, flag it to the human as a Phase 1 suggestion.
-- DON'T proceed to Phase 3 until the human has reviewed and approved the TS.
 
 ### Phase 3 -- Generate Work Packages
 
-**Trigger:** Human approves the Test Spec.
+**Trigger:** Test Spec has been generated (Phase 2 complete).
 
 **Steps:**
 
@@ -223,8 +261,9 @@ IF the FS declares `depends_on` features:
    - **Implementation notes** -- technical guidance, patterns to follow, constraints
    - **Target workspace** -- which repo under `workspaces/` this WP is implemented in
 6. Write files to the feature folder.
-7. Update `status.yaml`: set each `artifacts.WP-XXX-BE/FE.status` to `awaiting_review`.
-8. After the human approves the WPs, update `status.yaml`: set each WP status to `approved`, advance `current_phase` to `4`, and initialise each `phase_4` entry to `{ status: not_started }`.
+7. Update `status.yaml`: set `artifacts.TS-XXX.status` and each `artifacts.WP-XXX-BE/FE.status` to `awaiting_review`.
+8. Present both the TS and WPs to the human for review together.
+9. After the human approves, update `status.yaml`: set TS and each WP status to `approved`, advance `current_phase` to `4`, and initialise each `phase_4` entry to `{ status: not_started }`.
 
 **Self-verification checklist:**
 
@@ -261,13 +300,29 @@ IF the FE WP depends on new endpoints being built in the same feature:
 - DO state the implementation order (parallel with mocks, or BE-first / FE-second) at the end of Phase 3.
 - DON'T create a WP that depends on reading another WP to understand scope.
 - DON'T contradict an existing contract without proposing an ADR.
-- DON'T proceed to Phase 4 until the human has reviewed and approved the WPs.
+- DON'T proceed to Phase 4 until the human has reviewed and approved the TS and WPs.
 
 ### Phase 4 -- Implement in Workspace
 
 **Trigger:** Human approves the Work Packages.
 
 **Mode:** `/collaborate` (default) or `/autopilot` (if human switches).
+
+**Prerequisite gate — verify before starting any WP:**
+
+```
+1. status.yaml current_phase == 4
+2. artifacts.FS-XXX.status == approved
+3. artifacts.IA-XXX.status == approved (if IA exists)
+4. artifacts.TS-XXX.status == approved
+5. artifacts.WP-XXX.status == approved (for the WP being implemented)
+6. IF FS declares depends_on:
+   → Check dependency feature status.yaml — dependency WPs must be done
+   → Exception: FE WPs may proceed with contract mocks if the WP
+     explicitly includes mock instructions
+```
+
+If any prerequisite fails, STOP and inform the human. Do not begin implementation.
 
 **Steps:**
 
@@ -344,7 +399,9 @@ All contract changes MUST be presented to the human for review before you procee
 
 | Artifact | Pattern | Example |
 |---|---|---|
+| Feature Concept (PDR) | `PDR-XXX` | `PDR-001` |
 | Feature Spec | `FS-XXX` | `FS-001` |
+| Impact Analysis | `IA-XXX` | `IA-001` |
 | Test Spec | `TS-XXX` | `TS-001` |
 | Backend Work Package | `WP-XXX-BE` | `WP-001-BE` |
 | Frontend Work Package | `WP-XXX-FE` | `WP-001-FE` |
@@ -370,11 +427,14 @@ IF status.yaml exists:
   → Do not re-run steps already marked complete or approved.
 
 IF status.yaml does not exist (fallback — file-existence detection):
-  IF only FS exists            → Start at Phase 1 (review it).
-  IF FS + TS exist             → Read both. Start at Phase 3 (generate WPs).
-  IF FS + TS + WPs exist       → Read all. Start at Phase 4 (implement).
   IF nothing exists            → Ask the human to author an FS, or help draft one
-                                 in /collaborate mode.
+                                 in /collaborate mode. Offer Phase 0 (PDR) if the
+                                 feature idea is still vague.
+  IF only PDR exists           → Start at Phase 1 (draft the FS + IA).
+  IF only FS exists            → Start at Phase 1 (review it, generate IA).
+  IF FS + IA exist             → Read both. Start at Phase 2 (generate TS + WPs).
+  IF FS + IA + TS exist        → Read all. Start at Phase 3 (generate WPs).
+  IF FS + IA + TS + WPs exist  → Read all. Start at Phase 4 (implement).
   → Create status.yaml immediately to begin tracking state.
 ```
 

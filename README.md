@@ -50,7 +50,8 @@ git submodule add <workspace-repo-url> workspaces/<service-name>
 
 ```mermaid
 flowchart TD
-    FS["Feature Spec (FS-001): Goals + Acceptance Criteria"] --> TS["Test Spec (TS-001) - Test scenarios derived from FS"]
+    PDR["Feature Concept (PDR): What + Why"] --> FS["Feature Spec (FS-001): Goals + Acceptance Criteria + Impact Analysis"]
+    FS --> TS["Test Spec (TS-001): Test scenarios derived from FS"]
     TS --> BE["Work Package — Backend (WP-001-BE)"]
     TS --> FE["Work Package — Frontend (WP-001-FE)"]
     BE --> BR["Backend Repo (via git submodule)"]
@@ -61,11 +62,12 @@ flowchart TD
 
 | Step | Owner | Reviewer |
 |---|---|---|
-| Feature Spec (FS) | Human | -- |
-| Test Spec (TS) | AI agent | Human |
-| Work Packages (WP) | AI agent | Human |
+| Feature Concept (PDR) | Human + AI agent | Human |
+| Feature Spec (FS) + Impact Analysis | AI agent | Human |
+| Test Spec (TS) + Work Packages (WP) | AI agent | Human (reviews both together) |
+| Implementation | AI agent | Human (DoD checklist) |
 
-Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review before anything moves forward.
+Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review and approve via `status.yaml` before anything moves forward.
 
 Every work package is **self-contained** -- an implementer should be able to complete it without reading the rest of the spec tree.
 
@@ -103,7 +105,9 @@ spec-hub/
 ├── plan/
 │   ├── spec/
 │   │   └── Story-1234-{slug}/     # One folder per feature (ticket ID + slug)
+│   │       ├── PDR-XXX.md         # Feature Concept (Product Discovery Record)
 │   │       ├── FS-XXX.md          # Feature Spec
+│   │       ├── IA-XXX.md          # Impact Analysis
 │   │       ├── TS-XXX.md          # Test Spec
 │   │       ├── WP-XXX-BE.md       # Backend Work Package
 │   │       ├── WP-XXX-FE.md       # Frontend Work Package
@@ -174,10 +178,10 @@ flowchart TD
 To add a specification for a new feature:
 
 1. Create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `Story-0002-user-registration`).
-2. **Human** authors `FS-XXX.md` — define the goal, acceptance criteria, and status. Include `Depends on` and `Blocks` fields in the header if this feature has dependencies (see below).
-3. **AI agent** derives `TS-XXX.md` — test scenarios that trace back to each acceptance criterion. Agent creates `status.yaml` to begin tracking progress. **Human reviews.**
-4. **AI agent** splits into work packages: `WP-XXX-BE.md` and/or `WP-XXX-FE.md`. Each must be self-contained. **Human reviews.**
-5. **AI agent** implements in the target workspace, updating `status.yaml` after each significant step to maintain a recovery checkpoint.
+2. **Human + AI agent** create `PDR-XXX.md` — a Feature Concept that captures *what* and *why* before any detailed spec work. **Human reviews and approves.**
+3. **Human + AI agent** create `FS-XXX.md` — detailed Feature Spec with goals, acceptance criteria, and `IA-XXX.md` — Impact Analysis covering affected contracts, services, and data models. Include `Depends on` and `Blocks` fields in the FS header if this feature has dependencies (see below). **Human reviews and approves.**
+4. **AI agent** generates `TS-XXX.md` (test scenarios tracing to each AC) and splits into work packages: `WP-XXX-BE.md` and/or `WP-XXX-FE.md`. Each WP must be self-contained. Agent creates `status.yaml` to begin tracking progress. **Human reviews TS and WPs together.**
+5. **AI agent** implements in the target workspace, updating `status.yaml` after each significant step to maintain a recovery checkpoint. Agent verifies all prerequisites (FS, TS, WPs) are approved before starting.
 6. **Human** updates `registry/routes.yaml` if the feature targets a workspace not yet registered.
 
 ### Feature Spec header format
@@ -243,7 +247,9 @@ feature: Story-0001-guest-checkout
 current_phase: 4
 
 artifacts:                              # draft | awaiting_review | approved | rejected
+  PDR-001:   { status: approved, date: 2026-04-03 }
   FS-001:    { status: approved, date: 2026-04-03 }
+  IA-001:    { status: approved, date: 2026-04-03 }
   TS-001:    { status: approved, date: 2026-04-03 }
   WP-001-BE: { status: approved, date: 2026-04-03 }
   WP-001-FE: { status: approved, date: 2026-04-03 }
@@ -264,7 +270,9 @@ When a session is interrupted, the agent reads `status.yaml` first and resumes f
 
 | Artifact | Pattern | Example |
 |---|---|---|
+| Feature Concept (PDR) | `PDR-XXX` | `PDR-001` |
 | Feature Spec | `FS-XXX` | `FS-001` |
+| Impact Analysis | `IA-XXX` | `IA-001` |
 | Test Spec | `TS-XXX` | `TS-001` |
 | Backend Work Package | `WP-XXX-BE` | `WP-001-BE` |
 | Frontend Work Package | `WP-XXX-FE` | `WP-001-FE` |
