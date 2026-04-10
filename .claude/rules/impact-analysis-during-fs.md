@@ -1,0 +1,17 @@
+# Rule: Impact Analysis Before Writing Acceptance Criteria
+
+Before writing ACs for any Feature Spec, assess what the feature touches. This is a critical step for existing systems — do not skip it.
+
+Answer these questions:
+
+1. Which services are affected? — Read `registry/routes.yaml`.
+2. Which contracts need to change? — Scan `contracts/api/` and `contracts/data-schema/`.
+3. Which consumers of those contracts exist? — Identify downstream dependencies.
+4. What is the blast radius if this breaks? — Assess scope of impact.
+5. Can this be done **without** changing contracts? — Prefer additive changes over breaking ones. If the feature can be delivered without modifying existing contracts, that is always the safer path.
+
+**When anything is unclear, ask the human.** Do not assume service boundaries, contract ownership, or blast radius. If the human cannot answer, document the item as an explicit assumption in the impact analysis — never silently fill in the gap.
+
+Cross-check: every affected service from the analysis should have ≥1 AC in the FS. If a service is affected but has no AC, either the analysis is wrong or an AC is missing.
+
+If breaking contract changes are needed, flag them immediately — they require an ADR and consumer approval before implementation begins.
