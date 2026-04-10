@@ -4,6 +4,28 @@ Use during Step 7 (Contract Review) of the sdd-feature-spec workflow. Review eac
 
 ---
 
+## Summary Table Format
+
+Present contract needs to the human using this format:
+
+```
+CONTRACT CHANGES NEEDED:
+| Contract | Change | Type | Status |
+|----------|--------|------|--------|
+| [file]   | [desc] | additive/breaking | exists / to be created |
+```
+
+## Preference Rules
+
+Apply in this order — always prefer the least disruptive option:
+
+1. **No contract changes** — if the feature can be delivered without modifying contracts
+2. **Additive changes** — new fields/endpoints alongside existing ones
+3. **New version (v1 → v2)** — new path prefix, old version deprecated
+4. **Breaking change with ADR** — last resort, requires consumer approval before implementation
+
+---
+
 ## API Contract Review (OpenAPI)
 
 For each changed or new endpoint:

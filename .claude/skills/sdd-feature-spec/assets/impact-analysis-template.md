@@ -1,3 +1,37 @@
+# Impact Analysis Template
+
+## Presentation Format
+
+Use this format when presenting impact analysis findings to the human for confirmation during Step 2. Keep it concise — the full IA document uses the template below.
+
+```
+IMPACT ANALYSIS: [Feature Name]
+
+SERVICES AFFECTED:
+  - [service-id]: [what changes] — [additive / breaking / none]
+
+CONTRACTS TO CHANGE:
+  - [contract file]: [description of change]
+
+CONSUMERS AFFECTED:
+  - [service/app that depends on changed contracts]
+
+BLAST RADIUS: [High / Medium / Low] — [reasoning]
+BREAKING CHANGES: [Yes / No]
+RECOMMENDED APPROACH: [no contract changes / additive / new version / breaking with ADR]
+
+ASSUMPTIONS (if human could not confirm):
+  - [item assumed and why]
+
+→ Confirm before I write ACs.
+```
+
+---
+
+## Full IA Document Template
+
+Use this structure when writing the `IA-XXX.md` file to the feature folder.
+
 # Impact Analysis: [Feature Name]
 
 **Feature:** `Story-XXXX-[slug]`
