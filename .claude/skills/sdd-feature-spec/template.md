@@ -148,11 +148,19 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Open Questions
 
 <!-- Unresolved items that need answers before the FS can be approved.
-     The agent will not advance to Phase 2 while open questions remain.
+     sdd-plan will not advance to Phase 2 while [BLOCKS APPROVAL] questions remain.
      Remove this section entirely when the FS moves to Approved status. -->
 
-- [ ] {Question 1}
-- [ ] {Question 2}
+<!-- Each question includes options with the agent's recommendation so the
+     human can resolve them during review without a back-and-forth session. -->
+
+- [ ] `[BLOCKS APPROVAL]` {Question that changes ACs if answered differently}
+  - **Option A (Recommended):** {description and reasoning}
+  - **Option B:** {description and reasoning}
+
+- [ ] `[MINOR]` {Refinement question that doesn't change ACs}
+  - **Option A (Recommended):** {description}
+  - **Option B:** {description}
 
 ---
 

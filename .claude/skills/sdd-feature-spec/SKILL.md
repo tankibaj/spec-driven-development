@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 ## Overview
 
-Write a Feature Spec (FS) informed by an approved Feature Concept. Impact analysis and contract review are part of this workflow — not separate steps.
+Generate an Impact Analysis (IA) and Feature Spec (FS) in a single pass from an approved Feature Concept. The only interactive step is resolving open questions or ambiguities in the PDR — everything else is autonomous.
 
 The FS is the contract between the Product Owner and the implementation agent. Every AC must be testable, traceable to the concept, and aligned with existing contracts.
 
@@ -24,25 +24,22 @@ The FS is the contract between the Product Owner and the implementation agent. E
 
 **When NOT to use:** Before concept approval (use `/sdd-feature-concept`), during implementation, for PDR writing.
 
-## Standing Instructions
+## Guiding Principles
 
-These apply at every step of the workflow — not just one:
+These apply throughout generation — not just one step:
 
-- Never invent ACs beyond what the human described. If you think one is missing, propose it separately and label it as your suggestion.
+- Never invent ACs beyond what the PDR describes. If you think one is missing, include it in the FS clearly labeled `[AGENT SUGGESTION]` so the human can accept or reject during review.
 - Never silently assume a contract supports what you're writing. Check `contracts/` or flag as "to be created."
-- After every happy-path AC, ask: "Can this fail? What should happen when it does?"
-- If the human gives vague input, reframe it as testable conditions and confirm before writing ACs.
-- If anything is unclear, ask the human. If they can't answer, document it as an explicit assumption — never silently fill the gap.
+- For every happy-path AC, generate at least one error/edge-case AC where the happy path can fail.
+- If the PDR is vague on a point, reframe it as testable conditions and include both the interpretation and the `Testable:` line. The human validates during review.
 - Every affected service from the impact analysis must have at least one AC. If a service is affected but has no AC, either the analysis is wrong or an AC is missing.
-- If breaking contract changes are needed, flag them immediately — they require an ADR and consumer approval before implementation.
-- After completing each step, state: "Step N done. Moving to Step N+1: [name]." This keeps progress visible across long sessions.
-- If you cannot resolve a question or blocker at any step, add it as an Open Question with a `[BLOCKED: Step N]` tag and continue to the next step. The FS stays at Draft status while open questions remain. Do not stop the entire workflow for one unresolved item.
+- If breaking contract changes are needed, flag them immediately in the IA — they require an ADR and consumer approval before implementation.
 
 ## Common Rationalizations
 
 | Rationalization | Reality |
 |---|---|
-| "The PDR covers this, I don't need to ask" | The PDR captures intent, not precision. ACs require details the PDR deliberately left vague. |
+| "The PDR covers this, I don't need to dig deeper" | The PDR captures intent, not precision. ACs require details the PDR deliberately left vague. |
 | "This AC is obvious, it doesn't need a Testable: line" | If you can't write the Testable: line, the AC is too vague. Every AC, no exceptions. |
 | "I'll assume the contract supports this" | Check `contracts/`. If the endpoint doesn't exist, flag it. Silent assumption = spec bug found in Phase 4. |
 | "Edge cases can be handled during implementation" | Edge cases not in the FS won't be in the TS, won't be in the WP, won't be tested. Capture them now. |
@@ -54,44 +51,55 @@ These apply at every step of the workflow — not just one:
 Stop and reassess if you catch yourself doing any of these:
 
 - Writing ACs before completing impact analysis
-- Adding ACs the human never described without labeling them as suggestions
-- Skipping the "Can this fail?" question after a happy-path AC
+- Adding ACs the PDR never described without labeling them `[AGENT SUGGESTION]`
+- No error/edge-case AC for a happy-path AC that can fail
 - Using implementation language ("use a cron job", "add a column") instead of behavioral language
-- Proceeding past a review gate without explicit human confirmation
 - Assuming a contract exists without checking `contracts/`
 - Leaving a service from the impact analysis without a corresponding AC
+
+---
 
 ## The Workflow
 
 ```
-LOAD PDR ──→ IMPACT ──→ DRAFT ACs ──→ CONTRACT ──→ ASSEMBLE ──→ PRESENT
-   │            │           │            │            │            │
-   ▼            ▼           ▼            ▼            ▼            ▼
- Read the    Blast       Write each   Review what   Build the   Human
- concept     radius      AC with      contracts     full FS     reviews
-             analysis    Testable:    need changing
+LOAD PDR ──→ RESOLVE? ──→ GENERATE IA + FS ──→ WRITE FILES ──→ HUMAN REVIEWS
+   │            │               │                    │               │
+   ▼            ▼               ▼                    ▼               ▼
+ Read the    Only if PDR     Single pass:         Save as         Human approves
+ concept     has open Qs     IA + full FS         draft           or requests
+             or ambiguity    autonomously                         changes
 ```
 
-Each phase has a human review gate. Do not advance until confirmed.
+Two steps interactive (at most). One step autonomous. One human review gate.
 
-### Step 1: Setup
+---
+
+### Step 1: Setup and PDR Assessment
 
 If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
 1. List existing folders in `plan/spec/` and offer them if any match the context
 2. Ask the human: "Which feature folder? e.g., Story-0002-payment-flow"
 
-**Output location:** `plan/spec/Story-{$0}-{$1}/` — all artifacts (FS, IA) are saved to this folder.
+**Output location:** `plan/spec/{$0}-{$1}/` — all artifacts (FS, IA) are saved to this folder.
 
 Steps:
 1. Navigate to the feature folder (create it if it doesn't exist)
 2. Verify PDR exists and status is approved in `status.yaml`
 3. Load domain context:
    - `plan/reference/glossary.md`, `personas.md`, `roles.md`
-4. Load all skill reference files (used in later steps):
-   - `${CLAUDE_SKILL_DIR}/template.md` — FS structure and Testable: line formats (Steps 6, 9)
-   - `${CLAUDE_SKILL_DIR}/assets/impact-analysis-template.md` — IA presentation + document format (Step 2)
-   - `${CLAUDE_SKILL_DIR}/references/contract-review-checklist.md` — contract review table + rules (Step 7)
-5. Check the feature folder for existing FS and IA IDs to avoid collisions
+4. Load all skill reference files:
+   - `${CLAUDE_SKILL_DIR}/template.md` — FS structure and Testable: line formats
+   - `${CLAUDE_SKILL_DIR}/assets/impact-analysis-template.md` — IA document format
+   - `${CLAUDE_SKILL_DIR}/references/contract-review-checklist.md` — contract review rules
+5. Load contracts and registry:
+   - `registry/routes.yaml` — all workspaces
+   - `contracts/api/` — all OpenAPI specs
+   - `contracts/data-schema/` — all entity schemas
+6. Check the feature folder for existing FS and IA IDs to avoid collisions
+7. Read the PDR in full. Assess:
+   - Are there unresolved open questions (unchecked `[ ]` items)?
+   - Are any scope items ambiguous or vague?
+   - Are there assumptions that need human confirmation?
 
 If no approved PDR exists:
 
@@ -100,83 +108,87 @@ BLOCKED: No approved Feature Concept found in this feature folder.
 → Use /sdd-feature-concept to create one first.
 ```
 
-### Step 2: Impact Analysis
+**Decision point:**
 
-This is a critical step for existing systems. Before writing any ACs, assess what this feature touches.
+```
+IF PDR has unresolved open questions OR critical ambiguities:
+  → Go to Step 2 (Resolve)
+
+IF PDR is clear and all questions are resolved:
+  → Skip Step 2, go directly to Step 3 (Generate)
+```
+
+---
+
+### Step 2: Resolve Open Questions (interactive — only if needed)
+
+This step runs ONLY when the PDR has unresolved open questions or ambiguities that would fundamentally change the ACs.
+
+For each open question or ambiguity:
+1. Present options (minimum 2) with your recommendation and reasoning
+2. Wait for the human to choose
+3. Record the answer in the PDR (mark question `[x]`, add answer line below)
+
+After all questions are resolved, proceed to Step 3. Do not ask additional questions beyond what the PDR flagged — save any agent-identified concerns for the FS Open Questions section.
+
+---
+
+### Step 3: Generate IA + FS (autonomous — single pass)
+
+Generate both artifacts in one pass. Do not stop to ask the human questions. If you encounter uncertainty, document it in the FS Assumptions or Open Questions section with your recommended resolution.
+
+#### 3a: Impact Analysis
 
 Answer these five questions:
 
-1. **Which services are affected?** — Read `registry/routes.yaml`, list all workspaces
+1. **Which services are affected?** — Read `registry/routes.yaml`, check each workspace
 2. **Which contracts need to change?** — Scan `contracts/api/` and `contracts/data-schema/`
 3. **Which consumers of those contracts exist?** — Identify downstream dependencies
 4. **What is the blast radius if this breaks?** — Assess scope of impact
-5. **Can this be done without changing contracts?** — Prefer additive changes over breaking ones. If the feature can be delivered without modifying existing contracts, that is always the safer path.
+5. **Can this be done without changing contracts?** — Prefer additive changes over breaking ones
 
-**When anything is unclear, ask the human.** Do not assume service boundaries, contract ownership, or blast radius. If the human cannot answer, document the item as an explicit assumption in the impact analysis — never silently fill in the gap.
-
-Present findings to the human using the IA presentation format (loaded in Step 1). Must include: services affected, contracts to change, consumers affected, blast radius, recommended approach, and any assumptions made.
+When anything is unclear, document it as an explicit assumption in the IA — do not stop to ask.
 
 If breaking changes are identified:
 - Flag for ADR proposal in `contracts/architecture/`
 - Note in FS "Related Contracts" section
 
-**Present impact analysis to human. Confirm before writing ACs.**
+#### 3b: Feature Spec — All Sections
 
-### Step 3: Goal and Background
+Generate the complete FS using the template structure (loaded in Step 1):
 
-Draft the **Goal** section — pull from PDR's WHAT and WHO. Name the primary persona from `plan/reference/personas.md`.
+**Goal** — Pull from PDR's WHAT and WHO. Name the primary persona from `plan/reference/personas.md`.
 
-Draft the **Background** section — pull from PDR's WHY. Add data or business context.
+**Background** — Pull from PDR's WHY. Add business context.
 
-Ask the human: "What is the business context? Why now?" (The human may have more context than the PDR captured.)
+**Impact Analysis Summary** — Summarize IA findings: services affected, contracts to change, blast radius, breaking changes.
 
-### Step 4: Assumptions
-
-Ask the human: "What are we taking for granted? What, if wrong, would change this spec?"
-
-Seed from:
-- PDR assumptions
+**Assumptions** — Seed from:
+- PDR assumptions (carried forward)
 - Impact analysis findings (services assumed available, data assumed to exist)
+- Resolved open question decisions
+- Any agent assumptions made during generation — clearly labeled
 
-### Step 5: User Flow
+**User Flow** — For multi-step features: map the end-to-end sequence. Number each step and note which AC(s) it covers. For single-action features: skip this section.
 
-For multi-step features: map the end-to-end sequence. Number each step and note which future AC(s) it covers.
+**Acceptance Criteria** — For each capability in the PDR scope:
 
-For single-action features: skip this section.
-
-### Step 6: Acceptance Criteria
-
-This is the core of the spec. For each capability in the PDR scope:
-
-**If the PDR or human gives vague input** (e.g., "make checkout faster"), reframe it as testable conditions before writing ACs:
-
-```
-VAGUE: "Make checkout faster"
-
-REFRAMED:
-- AC-XXX: Checkout API responds within 2s (p95)
-- AC-XXX: No layout shift during checkout load (CLS < 0.1)
-→ Are these the right targets?
-```
-
-Confirm the reframing with the human before proceeding.
-
-1. **Propose ACs one at a time.** Each AC must have:
+1. Write each AC with:
    - `AC-XXX` ID and descriptive title
    - Behavioral description (what happens, not how to implement)
-   - `Testable:` line using standardized formats from the FS template (loaded in Step 1)
+   - `Testable:` line using standardized formats from the FS template
 
-2. **After each happy-path AC, propose error/edge-case ACs** where the happy path can fail. Ask the human: "Can this fail? What should happen when it does?"
+2. For every happy-path AC, generate error/edge-case ACs where the happy path can fail.
 
-3. **Cross-check each AC against:**
+3. Cross-check each AC against:
    - Impact analysis — every affected service should have ≥1 AC
    - `contracts/api/` — do referenced endpoints exist?
    - `contracts/data-schema/` — do referenced entities exist?
    - `plan/reference/glossary.md` — is domain terminology correct?
 
-4. **Flag missing contracts.** If an AC references an API or entity that doesn't exist yet, note it as "(to be created — see Contract Review below)".
+4. Flag missing contracts as "(to be created — see Contract Review)".
 
-5. **Flag new domain terms.** If the feature introduces terms not in `glossary.md`, note them for glossary addition.
+5. If any ACs go beyond what the PDR explicitly described, label them `[AGENT SUGGESTION]`.
 
 **AC quality criteria — every AC must be:**
 - **TESTABLE:** has a `Testable:` line with concrete verification
@@ -184,50 +196,55 @@ Confirm the reframing with the human before proceeding.
 - **CONTRACT-ALIGNED:** references existing or flagged-for-creation contracts
 - **BEHAVIORAL:** describes what happens, not implementation details
 
-### Step 7: Contract Review
+**Contract Review** — Summarize contract needs using the table format and preference rules from the contract review checklist (loaded in Step 1). Review each changed contract against the checklist criteria.
 
-Based on impact analysis + ACs written, summarize contract needs using the table format and preference rules from the contract review checklist (loaded in Step 1). Review each changed contract against the checklist criteria.
+**Open Questions** — Capture items the agent could not resolve with confidence. For each:
+- State the question
+- Provide 2-3 options with the agent's recommendation
+- Tag with severity: `[BLOCKS APPROVAL]` if it changes ACs, or `[MINOR]` if it's a refinement
+- FS stays at `draft` while `[BLOCKS APPROVAL]` questions remain
 
-**Present to human.** Contract changes will be executed in Phase 3 (WP generation) per CLAUDE.md.
+**Non-Functional Requirements** — Include if the PDR implies performance, security, or scalability requirements. Otherwise omit.
 
-### Step 8: Open Questions and Remaining Sections
+**Out of Scope** — Pull from PDR's "Explicitly Out of Scope" section. Must be non-empty.
 
-- **Open Questions** — capture unresolved items as checkboxes. FS stays at Draft while questions remain.
-- **Non-Functional Requirements** — ask: "Any performance, security, or scalability requirements?" Optional.
-- **Out of Scope** — ask: "What should we explicitly exclude?" Must be non-empty.
-- **Related Contracts** — link existing contracts + flag ones to be created. Include contract change summary from Step 7.
+**Related Contracts** — Link existing contracts + flag ones to be created. Include contract change summary from the contract review.
 
-### Step 9: Assemble and Present
+#### 3c: Self-Verification
 
-1. Determine the next available `FS-XXX` ID by listing existing files in the feature folder
-2. Assemble the full draft FS using the template structure (loaded in Step 1)
-3. Include impact analysis summary in the Related Contracts section
-4. Run the verification checklist (below)
-5. Present the complete draft to the human
-6. **STOP.** Wait for human review and sign-off.
+Run the verification checklist (below) before proceeding. Fix any failures silently — do not present a known-incomplete artifact.
 
-### Step 10: Finalize
+---
 
-After the human signs off on the draft content:
+### Step 4: Write Files and Present
 
-1. Determine the next available `FS-XXX` ID (from Step 1 scan)
-2. Determine the next available `IA-XXX` ID by listing existing files in the feature folder
-3. Write `FS-XXX.md` to the feature folder
-4. Write `IA-XXX.md` to the same feature folder
-5. Update `status.yaml`:
+1. Determine the next available `FS-XXX` and `IA-XXX` IDs from the feature folder scan
+2. Write `IA-XXX.md` to the feature folder using the IA document template
+3. Write `FS-XXX.md` to the feature folder using the FS template structure
+4. Update `status.yaml`:
 
 ```yaml
+current_phase: 1
 artifacts:
-  PDR: { status: approved }
-  IA-XXX: { status: approved, date: YYYY-MM-DD }
+  PDR-XXX: { status: approved }
+  IA-XXX: { status: draft, date: YYYY-MM-DD }
   FS-XXX: { status: draft, date: YYYY-MM-DD }
 ```
 
-6. Tell the user: "FS saved. Ready to proceed to Phase 2 (Test Spec generation) when you approve."
+5. Present a summary to the human:
+   - Impact analysis highlights (services affected, contract changes, blast radius)
+   - AC count and coverage summary
+   - Open questions (if any) with recommended answers
+   - Assumptions that need validation
+   - "IA and FS written as drafts. Review both files and update `status.yaml` when approved."
+
+6. **STOP.** The human reviews the files directly, resolves open questions, and updates `status.yaml` to `approved` when satisfied.
+
+---
 
 ## Verification Checklist
 
-Run before presenting the draft. Every item must pass.
+Run before writing files. Every item must pass.
 
 - [ ] Approved PDR was loaded and referenced
 - [ ] Impact analysis completed — all affected services identified
@@ -243,6 +260,6 @@ Run before presenting the draft. Every item must pass.
 - [ ] Breaking changes flagged with ADR recommendation
 - [ ] Domain terminology matches `plan/reference/glossary.md`
 - [ ] Out of Scope section is present and non-empty
-- [ ] Open questions captured (blocks approval if unresolved)
+- [ ] Open questions captured with options and recommendations (blocks approval if `[BLOCKS APPROVAL]`)
 - [ ] Contract review summary included in Related Contracts
-- [ ] No acceptance criteria invented beyond what the human described — flag suggestions separately
+- [ ] ACs beyond PDR scope labeled `[AGENT SUGGESTION]`

@@ -119,22 +119,26 @@ No artifact advances to the next phase until it reaches `approved`. The implemen
 
 ### Phase 1 -- Feature Spec + Impact Analysis
 
-**Trigger:** A human has authored an FS or requests help creating one.
+**Trigger:** An approved PDR exists and the human wants to generate the FS.
 
-**Routing:**
+**Skill:** `sdd-feature-spec` — generates IA + FS in a single pass.
+
+**Flow:**
 
 ```
-IF no FS exists and human wants help creating one:
-  → Use the appropriate skill from .claude/skills/. The human invokes it.
+IF PDR has unresolved open questions or critical ambiguities:
+  → Resolve interactively (present options with recommendations, human chooses)
+  → Then generate IA + FS autonomously
 
-IF an FS exists and needs evaluation:
-  → Read it. Load domain context (glossary, personas, roles).
-  → Evaluate ACs for clarity and testability.
-  → If ACs are incomplete, ambiguous, or contradict contracts:
-    propose improvements and STOP for human revision.
-  → If all ACs are testable: generate Impact Analysis (IA-XXX.md),
-    update status.yaml, and STOP for human review.
+IF PDR is clear and all questions resolved:
+  → Generate IA + FS autonomously (no interactive steps)
+```
 
+The skill writes both `IA-XXX.md` and `FS-XXX.md` as drafts. The FS includes an Assumptions section and an Open Questions section (with options and agent recommendations) for anything the agent could not resolve with confidence.
+
+**Human reviews both files directly.** No interactive AC-by-AC approval. The human updates `status.yaml` to `approved` when satisfied.
+
+```
 IF the FS declares depends_on:
   → Check dependency status.yaml. Dependencies done → proceed.
     In progress → FE can mock, flag to human. Missing → ask human.
@@ -144,9 +148,19 @@ IF the FS declares depends_on:
 
 **Trigger:** Human approves the FS and IA.
 
-Use the appropriate skill from `.claude/skills/`. It generates the Test Spec (Phase 2) and Work Packages (Phase 3) in sequence. The human reviews both artifacts together at the end.
+**Skill:** `sdd-plan` — runs a pre-flight check, then generates TS + WPs.
 
-After approval, `status.yaml` is updated: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
+**Pre-flight check** validates before any generation:
+- PDR, IA, and FS are all approved in `status.yaml`
+- No unresolved `[BLOCKS APPROVAL]` open questions in the FS
+- Every service in the IA has at least one AC in the FS
+- ACs are consistent with resolved open questions and assumptions
+- All referenced contracts exist or are flagged for creation
+
+If pre-flight fails: report issues, do not generate. The human fixes the FS/IA first.
+If pre-flight passes: generate TS + WPs autonomously in one pass.
+
+The human reviews all artifacts together at the end. After approval, `status.yaml` is updated: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
 
 ### Phase 4 -- Implement in Workspace
 

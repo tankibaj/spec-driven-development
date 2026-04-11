@@ -10,16 +10,16 @@ disable-model-invocation: true
 
 ## Overview
 
-Generate a Test Spec (Phase 2) and Work Packages (Phase 3) from an approved Feature Spec. Both phases run in sequence within one session. The human reviews both artifacts together at the end.
+Generate a Test Spec (Phase 2) and Work Packages (Phase 3) from an approved Feature Spec. Before any generation, run a pre-flight check that validates the IA and FS for completeness, consistency, and approval status.
 
 The TS ensures every AC is testable. The WPs ensure every test scenario is implementable by an AI agent in a single, self-contained work unit.
 
 ## When to Use
 
-- After a Feature Spec (FS) has been approved
+- After a Feature Spec (FS) and Impact Analysis (IA) have been approved
 - When ready to derive test scenarios and split work for implementation
 
-**Requires:** An approved FS-XXX.md in the feature folder (`plan/spec/Story-XXXX/`).
+**Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`plan/spec/Story-XXXX/`).
 
 **When NOT to use:** Before FS approval (use `/sdd-feature-spec`), during implementation (Phase 4), for drafting the FS itself.
 
@@ -27,15 +27,13 @@ The TS ensures every AC is testable. The WPs ensure every test scenario is imple
 
 These apply at every step across both phases:
 
-- After completing each step, state: "Step N done. Moving to Step N+1: [name]."
-- If you cannot resolve a question or blocker, add it as an Open Question with a `[BLOCKED: Step N]` tag and continue. Do not stop the entire workflow for one unresolved item.
-- Never invent content beyond what the FS contains. If you think something is missing, flag it to the human.
+- Never invent content beyond what the FS contains. If you think something is missing, flag it in the pre-flight report.
 - Every AC in the FS must be covered. No AC left behind, no orphan scenarios, no unassigned WPs.
 
 **Phase 2 — Test Spec:**
 - Every scenario MUST have Preconditions, Action, Expected outcome — no exceptions.
 - Each scenario traces to exactly one AC. Never combine multiple ACs into one scenario.
-- After each happy-path scenario, ask: "What goes wrong here?" Write negative/edge-case scenarios.
+- After each happy-path scenario, generate negative/edge-case scenarios.
 - Cross-service scenarios must validate the contract boundary — correct request shape to the mock, correct behavior on mock error.
 
 **Phase 3 — Work Packages:**
@@ -55,7 +53,7 @@ These apply at every step across both phases:
 | "I'll combine related ACs into one scenario" | Each scenario traces to exactly one AC. Combined scenarios hide which AC failed. |
 | "Contract testing is separate" | Integration scenarios validating contract boundaries belong in the TS. |
 | "Observability tests can wait" | Health/ready/metrics are in the DoD. Write them now or they'll be forgotten. |
-| "This AC is too high-level to test" | If it's untestable, it shouldn't be in the FS. Flag it back to the human. |
+| "This AC is too high-level to test" | If it's untestable, it shouldn't be in the FS. Flag it in the pre-flight report. |
 | "4 ACs is fine, they're small" | Max 3. More context = more hallucination risk for the implementation agent. |
 | "The implementer can look up the contract" | No. Include the relevant paths/schemas directly in the WP. |
 | "I'll reference TS-001-005 instead of copying it" | Copy verbatim. The implementation agent reads only the WP. |
@@ -81,11 +79,22 @@ Stop and reassess if you catch yourself doing any of these:
 - Contract referenced by path but not excerpted
 - A TS scenario that appears in no WP
 
+---
+
 ## The Workflow
 
 ```
-LOAD FS ──→ PHASE 2: TEST SPEC ──→ PHASE 3: WORK PACKAGES ──→ HUMAN REVIEW (both TS + WPs) ──→ DONE
+PRE-FLIGHT ──→ PHASE 2: TEST SPEC ──→ PHASE 3: WORK PACKAGES ──→ WRITE FILES ──→ HUMAN REVIEWS
+     │                │                        │                       │               │
+     ▼                ▼                        ▼                       ▼               ▼
+  Validate IA      Generate all            Generate all WPs        Save all         Human approves
+  + FS quality     scenarios in            in one pass             as awaiting      or requests
+  Report issues    one pass                                        review           changes
 ```
+
+Pre-flight is the gate. If it fails, generation does not start.
+
+---
 
 ### Step 1: Setup
 
@@ -93,16 +102,12 @@ If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
 1. List existing folders in `plan/spec/` and offer them if any match the context
 2. Ask the human: "Which feature folder?"
 
-**Output location:** `plan/spec/Story-{$0}-{$1}/` — all artifacts (TS, WPs) are saved to this folder.
+**Output location:** `plan/spec/{$0}-{$1}/` — all artifacts (TS, WPs) are saved to this folder.
 
 Steps:
 1. Navigate to the feature folder
-2. Verify FS exists and is approved in `status.yaml`
-3. If the FS has a `depends_on` field, check `status.yaml` for each dependency:
-   - All dependencies at `phase_4: done` → proceed normally
-   - Any dependency `in_progress` → flag to human; FE WPs can proceed with contract mocks, BE WPs may be blocked
-   - Any dependency pre-phase-4 or missing → ask the human whether to block or proceed with mocks
-4. Read the FS in full — this is your primary input for both phases
+2. Read `status.yaml`
+3. Read the FS and IA in full
 4. Load domain context: `plan/reference/glossary.md`, `personas.md`, `roles.md`
 5. Load all skill reference files:
    - `${CLAUDE_SKILL_DIR}/phases/phase-2-test-spec.md` — TS generation procedure
@@ -111,21 +116,91 @@ Steps:
    - `${CLAUDE_SKILL_DIR}/templates/wp-be-template.md` — Backend WP structure
    - `${CLAUDE_SKILL_DIR}/templates/wp-fe-template.md` — Frontend WP structure
    - `${CLAUDE_SKILL_DIR}/references/splitting-guide.md` — AC-to-WP splitting criteria
-6. Load `registry/routes.yaml` — needed for workspace mapping in Phase 3
-7. Scan `contracts/api/` and `contracts/data-schema/` — needed for contract excerpts in Phase 3
+6. Load `registry/routes.yaml` — needed for workspace mapping
+7. Scan `contracts/api/` and `contracts/data-schema/` — needed for contract excerpts
 8. Check the feature folder for existing TS and WP IDs to avoid collisions
-9. Ask the human: "Should I create a feature branch `spec/{Story-ID}-{slug}` for this work, or will you manage branching?" Ask once — Phase 3 continues on the same branch.
 
-If no approved FS exists:
+---
+
+### Step 2: Pre-Flight Check
+
+Validate the IA and FS before generating anything. Run every check below. Collect all failures — do not stop at the first one.
+
+#### Approval Status
+
+| Check | How | Fail Action |
+|---|---|---|
+| PDR is approved | `status.yaml` `artifacts.PDR-XXX.status == approved` | BLOCK |
+| IA is approved | `status.yaml` `artifacts.IA-XXX.status == approved` | BLOCK |
+| FS is approved | `status.yaml` `artifacts.FS-XXX.status == approved` | BLOCK |
+
+#### FS Quality
+
+| Check | How | Fail Action |
+|---|---|---|
+| No unresolved open questions | FS Open Questions section has no unchecked `[ ]` items tagged `[BLOCKS APPROVAL]` | BLOCK |
+| All assumptions acknowledged | FS Assumptions section exists and is non-empty | WARN |
+| Out of Scope present | FS Out of Scope section exists and is non-empty | WARN |
+
+#### IA ↔ FS Alignment
+
+| Check | How | Fail Action |
+|---|---|---|
+| Every service in IA has ≥1 AC | Cross-reference IA "Affected Services" with ACs | BLOCK — missing AC or wrong IA |
+| No AC references a service not in IA | Cross-reference ACs with IA services | WARN — IA may be incomplete |
+| Contract changes in IA match FS Related Contracts | Compare IA contract changes with FS Related Contracts section | WARN |
+
+#### AC Consistency
+
+| Check | How | Fail Action |
+|---|---|---|
+| Every AC has a Testable: line | Scan all AC-XXX entries | BLOCK — untestable AC |
+| ACs reference existing or flagged contracts | Check each endpoint/entity reference against `contracts/` | WARN — may indicate missing contract |
+| Resolved open questions reflected in ACs | If PDR open questions were resolved, verify ACs are consistent with those decisions | WARN |
+| No vague ACs | ACs use behavioral language with concrete conditions | WARN |
+
+#### Dependency Check (if FS has `depends_on`)
+
+| Check | How | Fail Action |
+|---|---|---|
+| Dependencies approved | Check dependency `status.yaml` | BLOCK for BE WPs; FE may proceed with mocks |
+
+#### Report
+
+Present findings as:
 
 ```
-BLOCKED: No approved Feature Spec found in this feature folder.
-→ Use /sdd-feature-spec to create one first.
+PRE-FLIGHT CHECK: [Feature Name]
+
+✅ PASSED:
+  - [check]: [detail]
+
+❌ BLOCKED:
+  - [check]: [detail] — [what needs to happen]
+
+⚠️ WARNINGS:
+  - [check]: [detail] — [recommendation]
 ```
+
+**Decision:**
+
+```
+IF any BLOCK exists:
+  → STOP. Tell the human what needs fixing. Do not generate.
+
+IF only WARNINGS exist:
+  → Present warnings. Ask: "Proceed with generation despite warnings?"
+  → If human confirms, continue. If not, stop.
+
+IF all checks pass:
+  → Proceed to Phase 2.
+```
+
+---
 
 ### Phase 2: Test Spec Generation
 
-Follow the procedure in `phases/phase-2-test-spec.md` (loaded in Step 1).
+Follow the procedure in `phases/phase-2-test-spec.md` (loaded in Step 1). Generate all scenarios autonomously in one pass — do not stop to ask the human.
 
 After completing Phase 2:
 
@@ -133,14 +208,16 @@ After completing Phase 2:
 2. Write `TS-XXX.md` to the feature folder immediately
 3. Proceed directly to Phase 3
 
+---
+
 ### Phase 3: Work Package Generation
 
-Follow the procedure in `phases/phase-3-work-packages.md` (loaded in Step 1). Use the TS from Phase 2 as input.
+Follow the procedure in `phases/phase-3-work-packages.md` (loaded in Step 1). Use the TS from Phase 2 as input. Generate all WPs autonomously in one pass.
 
 After completing Phase 3:
 
 1. Determine the next available `WP-XXX` IDs (one per WP, using `-BE` or `-FE` suffix)
-2. Write `WP-XXX-BE.md` and/or `WP-XXX-FE.md` to the feature folder
+2. Write all `WP-XXX-BE.md` and/or `WP-XXX-FE.md` to the feature folder
 3. State the recommended implementation order:
 
 ```
@@ -153,28 +230,37 @@ IF FE depends on new endpoints being built in this feature:
     FE mocks against the OpenAPI spec until BE is deployed."
 ```
 
-4. Update `status.yaml` — all new artifacts as `awaiting_review`:
+---
+
+### Step 5: Finalize and Present
+
+1. Update `status.yaml` — all new artifacts as `awaiting_review`:
 
 ```yaml
 current_phase: 3
 artifacts:
+  PDR-XXX: { status: approved }
+  IA-XXX: { status: approved }
   FS-XXX: { status: approved }
   TS-XXX: { status: awaiting_review, date: YYYY-MM-DD }
   WP-XXX-BE: { status: awaiting_review, date: YYYY-MM-DD }
   WP-XXX-FE: { status: awaiting_review, date: YYYY-MM-DD }
 ```
 
-5. Present ALL artifacts to the human for review: the TS and every WP.
-6. **STOP. Wait for human to review and approve.**
+2. Present a summary to the human:
+   - Pre-flight check result (all passed / warnings acknowledged)
+   - TS coverage: number of scenarios, traceability matrix
+   - WP split: number of WPs, workspace assignments, dependency order
+   - Any warnings or concerns from generation
+   - "TS and WPs written as awaiting_review. Review all files and update `status.yaml` when approved."
 
-### Finalize
+3. **STOP. Wait for human to review and approve.**
 
 After the human approves, update `status.yaml`:
 
 ```yaml
 current_phase: 4
 artifacts:
-  FS-XXX: { status: approved }
   TS-XXX: { status: approved, date: YYYY-MM-DD }
   WP-XXX-BE: { status: approved, date: YYYY-MM-DD }
   WP-XXX-FE: { status: approved, date: YYYY-MM-DD }
@@ -185,13 +271,15 @@ phase_4:
 
 Tell the human: "All artifacts approved. Phase 4 (implementation) is ready."
 
+---
+
 ### Implementation Agent Gate
 
 The Phase 4 implementation agent MUST verify before starting any WP:
 
 1. `current_phase` is `4`
 2. The WP's status under `artifacts` is `approved`
-3. All prerequisite artifacts are `approved`: PDR, FS, TS
+3. All prerequisite artifacts are `approved`: PDR, IA, FS, TS
 4. If the WP has dependencies on other WPs (e.g., FE depends on BE), the dependency WP's `phase_4` status is `done`
 
 If any check fails, the agent reports what is missing and does not proceed.
