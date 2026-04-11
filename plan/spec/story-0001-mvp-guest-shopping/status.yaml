@@ -5,24 +5,24 @@ artifacts:
   PDR-001: { status: approved, date: 2026-04-11 }
   IA-001: { status: approved, date: 2026-04-11 }
   FS-001: { status: approved, date: 2026-04-11 }
-  TS-001: { status: awaiting_review, date: 2026-04-11 }
-  WP-001-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-002-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-003-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-004-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-005-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-006-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-007-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-008-BE: { status: awaiting_review, date: 2026-04-11 }
-  WP-001-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-002-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-003-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-004-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-005-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-006-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-007-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-008-FE: { status: awaiting_review, date: 2026-04-11 }
-  WP-009-FE: { status: awaiting_review, date: 2026-04-11 }
+  TS-001: { status: approved, date: 2026-04-11 }
+  WP-001-BE: { status: approved, date: 2026-04-11 }
+  WP-002-BE: { status: approved, date: 2026-04-11 }
+  WP-003-BE: { status: approved, date: 2026-04-11 }
+  WP-004-BE: { status: approved, date: 2026-04-11 }
+  WP-005-BE: { status: approved, date: 2026-04-11 }
+  WP-006-BE: { status: approved, date: 2026-04-11 }
+  WP-007-BE: { status: approved, date: 2026-04-11 }
+  WP-008-BE: { status: approved, date: 2026-04-11 }
+  WP-001-FE: { status: approved, date: 2026-04-11 }
+  WP-002-FE: { status: approved, date: 2026-04-11 }
+  WP-003-FE: { status: approved, date: 2026-04-11 }
+  WP-004-FE: { status: approved, date: 2026-04-11 }
+  WP-005-FE: { status: approved, date: 2026-04-11 }
+  WP-006-FE: { status: approved, date: 2026-04-11 }
+  WP-007-FE: { status: approved, date: 2026-04-11 }
+  WP-008-FE: { status: approved, date: 2026-04-11 }
+  WP-009-FE: { status: approved, date: 2026-04-11 }
 
 phase_4: {}
 

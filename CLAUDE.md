@@ -91,7 +91,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | `contracts/architecture/workspace-bootstrap.md` | Toolchain, Dockerfile, CI, and project structure standard for every workspace |
 | `contracts/architecture/contract-validation.md` | Schemathesis, Pact, and MSW standards for API contract testing |
 | `contracts/architecture/observability-standards.md` | Health endpoints, Prometheus metrics, structured logging (Loki), and tracing standards |
-| `contracts/architecture/branching-strategy.md` | Branch naming, commit conventions, merge strategy, and agent branching instructions |
+| `.claude/rules/branching-strategy.md` | Branch naming, commit conventions, merge strategy — agent auto-creates branches |
 | `contracts/data-schema/` | Entity definitions, migrations |
 | `registry/project.yaml` | Project metadata -- domain, methodology, standards |
 | `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
@@ -166,77 +166,21 @@ The human reviews all artifacts together at the end. After approval, `status.yam
 
 **Trigger:** Human approves the Work Packages.
 
-**Mode:** `/collaborate` (default) or `/autopilot` (if human switches).
+**Skill:** `sdd-implement` — executes WPs in workspace repos. Runs pre-flight gate, determines execution order, implements each WP, and tracks progress via `status.yaml`. Runs parallel sub-agents for independent WPs targeting different workspaces when appropriate.
 
-**Prerequisite gate — verify before starting any WP:**
+**Interaction model:** Low-interaction. The WP is the approved spec — the agent executes it autonomously. Stops only for: pre-flight failure, contract conflicts, 3 failed fix attempts, or genuinely unresolvable ambiguity.
 
-```
-1. status.yaml current_phase == 4
-2. artifacts.FS-XXX.status == approved
-3. artifacts.IA-XXX.status == approved (if IA exists)
-4. artifacts.TS-XXX.status == approved
-5. artifacts.WP-XXX.status == approved (for the WP being implemented)
-6. IF FS declares depends_on:
-   → Check dependency feature status.yaml — dependency WPs must be done
-   → Exception: FE WPs may proceed with contract mocks if the WP
-     explicitly includes mock instructions
-```
+**Key behaviours:**
+- Pre-flight gate validates all artifact approvals, contract existence, workspace readiness, and cross-feature dependencies before any code is written.
+- Independent WPs targeting different workspaces may run in parallel — this is a judgment call, not forced.
+- The WP's Definition of Done is the only DoD. Do not invent additional checks.
+- Implementation precedence: WP Implementation Order → reference guide → agent judgment.
+- If a workspace doesn't exist, create it as a git submodule. Implementation code is committed only to submodules, never to the spec-hub.
+- Checkpoints follow a standard taxonomy (scaffold → models → routes → integration → tests → dod for BE; scaffold → state → components → integration → tests → dod for FE).
+- Contracts are read-only. On conflict: STOP, block, recommend (what's wrong, additive vs breaking, consumers affected, suggested fix).
+- 3 consecutive failed fix attempts → revert, block, report. Do not keep cycling.
 
-If any prerequisite fails, STOP and inform the human. Do not begin implementation.
-
-**Steps:**
-
-1. Navigate to the correct workspace submodule under `workspaces/`.
-2. Read the WP in full. The WP is your specification -- do not deviate from its scope.
-3. Ask the human: "Should I create a feature branch `feat/{story-ID}-{WP-ID}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once per WP — do not ask again mid-implementation.
-4. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`.
-5. Implement the feature as described. After each significant step, update `status.yaml` `last_checkpoint` with a short description of what was just completed (e.g. `"saga step 2 — reserve stock"`). This is your breadcrumb trail for session recovery.
-6. Write tests that map directly to the test scenarios listed in the WP.
-7. Verify that all tests pass.
-8. Update `status.yaml`: set `phase_4.WP-XXX.status` to `done`.
-9. If implementation reveals a spec issue (missing AC, impossible requirement, contract conflict):
-   - STOP implementation.
-   - Add the issue to `status.yaml` `blockers` and set `phase_4.WP-XXX.status` to `blocked`.
-   - Ask the human how to proceed. Do not patch around it.
-
-**Definition of Done — run before marking a WP `done` in `status.yaml`:**
-
-- [ ] All TS scenarios from the WP have passing automated tests
-- [ ] Linter passes with zero errors (`ruff check` for backend / `biome check` for frontend)
-- [ ] Type checker passes with zero errors (`mypy` / `tsc --noEmit`)
-- [ ] Contract validation passes (see `contracts/architecture/contract-validation.md`)
-- [ ] Observability requirements met: `/health`, `/ready`, `/metrics`, structured logging (see `contracts/architecture/observability-standards.md`)
-- [ ] No secrets, tokens, or credentials in code or test fixtures
-- [ ] `status.yaml` `phase_4.WP-XXX.status` set to `done`
-
-**Failure Escalation:**
-
-If you attempt to fix a failing test, type error, or linter error and fail 3 consecutive times:
-
-1. Stop attempting. Do not continue cycling through fixes.
-2. Revert the affected file to its last working state.
-3. Add the issue to `status.yaml` `blockers` with a clear description of what you tried and what the error says.
-4. Set `phase_4.WP-XXX.status` to `blocked`.
-5. Ask the human for guidance.
-
-Three failed attempts means you are missing context that is not in the WP. More attempts will not help.
-
-**Unblocking a blocked WP:**
-
-When a WP is `blocked` and the human resolves the issue:
-
-1. Re-read the updated WP in full — treat it as a new spec.
-2. Resume from the `last_checkpoint` recorded in `status.yaml` — do not re-run completed steps.
-3. Clear the resolved entry from `status.yaml` `blockers`.
-4. Set `phase_4.WP-XXX.status` back to `in_progress`.
-
-**Do / Don't:**
-
-- DO implement exactly what the WP specifies, nothing more.
-- DO write tests that correspond 1:1 to the TS scenarios in the WP.
-- DO keep `status.yaml` current — it is the recovery point for interrupted sessions.
-- DON'T add features, endpoints, or behaviors not in the WP.
-- DON'T modify files in `plan/` or `contracts/` during implementation without human approval.
+See `.claude/skills/sdd-implement/SKILL.md` for the full procedure, and `.claude/skills/sdd-implement/references/` for implementation guides, checkpoint taxonomy, and resume protocol.
 
 ---
 
