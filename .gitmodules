@@ -1,0 +1,15 @@
+[submodule "workspaces/inventory-service"]
+	path = workspaces/inventory-service
+	url = /Users/naim/Repos/github/sdd-workspaces/inventory-service
+[submodule "workspaces/order-service"]
+	path = workspaces/order-service
+	url = /Users/naim/Repos/github/sdd-workspaces/order-service
+[submodule "workspaces/notification-service"]
+	path = workspaces/notification-service
+	url = /Users/naim/Repos/github/sdd-workspaces/notification-service
+[submodule "workspaces/storefront-app"]
+	path = workspaces/storefront-app
+	url = /Users/naim/Repos/github/sdd-workspaces/storefront-app
+[submodule "workspaces/admin-app"]
+	path = workspaces/admin-app
+	url = /Users/naim/Repos/github/sdd-workspaces/admin-app
