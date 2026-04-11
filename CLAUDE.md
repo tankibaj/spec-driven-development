@@ -13,14 +13,14 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 
 ### Hard Rules
 
-- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. Creating an initial draft via the `/draft-feature-spec` skill is permitted — the human reviews and owns the final version. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review -- the human decides what goes into the FS.
+- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. The human creates the FS using skills and owns the final version. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review — the human decides what goes into the FS.
 - You **MUST NOT** write production code inside the spec-hub root. Code belongs in workspace submodules only (`workspaces/<service>/`).
 - You **MUST** ensure every acceptance criterion (AC) in a Feature Spec maps to at least one test scenario in the Test Spec. No gaps.
 - You **MUST** ensure every test scenario in the Test Spec traces back to an AC. No orphan scenarios.
 - You **MUST** make every Work Package self-contained. An implementer reads only that WP. If they would need to read another WP, the FS, or surrounding context to complete it, the WP is incomplete.
 - You **MUST** load domain context (`plan/reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
 - You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
-- You **MUST** use the correct ID conventions (see Section 6) when creating files. Check existing IDs in the feature folder to avoid collisions.
+- You **MUST** use the correct ID conventions (see Section 7) when creating files. Check existing IDs in the feature folder to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
 - You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
 - You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human. Do not modify contracts unilaterally.
@@ -36,6 +36,7 @@ Load only what you need, when you need it. Do not pre-load reference documents s
 
 - `CLAUDE.md` (this file)
 - `CLAUDE.learnings.md`
+- `registry/project.yaml` — project domain, tech stack, standards
 - All files in `.claude/rules/`
 - `status.yaml` for the active feature
 
@@ -94,7 +95,6 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 | `contracts/data-schema/` | Entity definitions, migrations |
 | `registry/project.yaml` | Project metadata -- domain, methodology, standards |
 | `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
-| `.claude/commands/` | Slash command definitions (`/autopilot`, `/review-spec`) |
 | `.claude/rules/` | Agent guardrails — enforced on every session |
 | `.claude/skills/` | Reusable agent skill definitions |
 | `workspaces/` | Git submodules -- each child is a separate implementation repo |
@@ -104,7 +104,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 
 ## 5. Workflow Phases
 
-Every feature follows phases 0 through 4. The core flow starts at Phase 1 (Feature Spec). You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
+Every feature follows phases 1 through 4. You may enter at any phase depending on what already exists (see Section 8: Session Resumption).
 
 ### Artifact Lifecycle
 
@@ -125,8 +125,7 @@ No artifact advances to the next phase until it reaches `approved`. The implemen
 
 ```
 IF no FS exists and human wants help creating one:
-  → Use the /sdd-feature-spec skill. It handles AC drafting, contract review,
-    and Impact Analysis generation.
+  → Use the appropriate skill from .claude/skills/. The human invokes it.
 
 IF an FS exists and needs evaluation:
   → Read it. Load domain context (glossary, personas, roles).
@@ -145,9 +144,9 @@ IF the FS declares depends_on:
 
 **Trigger:** Human approves the FS and IA.
 
-Use the `/sdd-plan` skill. It generates the Test Spec (Phase 2) and Work Packages (Phase 3) in sequence. The human reviews both artifacts together at the end.
+Use the appropriate skill from `.claude/skills/`. It generates the Test Spec (Phase 2) and Work Packages (Phase 3) in sequence. The human reviews both artifacts together at the end.
 
-After approval, the skill updates `status.yaml`: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
+After approval, `status.yaml` is updated: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
 
 ### Phase 4 -- Implement in Workspace
 
@@ -227,7 +226,7 @@ When a WP is `blocked` and the human resolves the issue:
 
 ---
 
-## 5.1. Contract Maintenance
+## 6. Contract Maintenance
 
 Creating and updating contracts is a normal part of the SDD workflow. When a feature requires new or changed interfaces, handle them as follows:
 
@@ -242,11 +241,10 @@ All contract changes MUST be presented to the human for review before you procee
 
 ---
 
-## 6. ID Conventions
+## 7. ID Conventions
 
 | Artifact | Pattern | Example |
 |---|---|---|
-| Feature Concept (PDR) | `PDR-XXX` | `PDR-001` |
 | Feature Spec | `FS-XXX` | `FS-001` |
 | Impact Analysis | `IA-XXX` | `IA-001` |
 | Test Spec | `TS-XXX` | `TS-001` |
@@ -258,15 +256,16 @@ Before creating any artifact, list existing files in the feature folder (for FS/
 
 ---
 
-## 7. Session Resumption
+## 8. Session Resumption
 
 At the start of every session:
 
 1. Read this file (`CLAUDE.md`).
 2. Read `CLAUDE.learnings.md` for institutional memory.
-3. Read all files in `.claude/rules/` — these guardrails are active for the entire session.
-4. If the human specifies a feature, navigate to its folder under `plan/spec/`.
-5. Check for `status.yaml` in the feature folder:
+3. Read `registry/project.yaml` for project domain, tech stack, and standards.
+4. Read all files in `.claude/rules/` — these guardrails are active for the entire session.
+5. If the human specifies a feature, navigate to its folder under `plan/spec/`.
+6. Check for `status.yaml` in the feature folder:
 
 ```
 IF status.yaml exists:
@@ -275,9 +274,7 @@ IF status.yaml exists:
 
 IF status.yaml does not exist (fallback — file-existence detection):
   IF nothing exists            → Ask the human to author an FS, or help draft one
-                                 in /collaborate mode. Offer Phase 0 (PDR) if the
-                                 feature idea is still vague.
-  IF only PDR exists           → Start at Phase 1 (draft the FS + IA).
+                                 in /collaborate mode.
   IF only FS exists            → Start at Phase 1 (review it, generate IA).
   IF FS + IA exist             → Read both. Start at Phase 2 (generate TS + WPs).
   IF FS + IA + TS exist        → Read all. Start at Phase 3 (generate WPs).
@@ -285,13 +282,13 @@ IF status.yaml does not exist (fallback — file-existence detection):
   → Create status.yaml immediately to begin tracking state.
 ```
 
-6. Confirm your assessment with the human before proceeding. Example:
+7. Confirm your assessment with the human before proceeding. Example:
 
 > "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Operating in /collaborate mode. Resuming Phase 4 from the last checkpoint. Confirm?"
 
 ---
 
-## 8. Institutional Memory
+## 9. Institutional Memory
 
 `CLAUDE.learnings.md` holds learnings accumulated across sessions. It is structured into three categories for efficient loading and scanning.
 
