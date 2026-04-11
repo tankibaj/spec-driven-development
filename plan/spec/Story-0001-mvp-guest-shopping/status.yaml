@@ -1,0 +1,16 @@
+feature: Story-0001-mvp-guest-shopping
+current_phase: 0
+
+artifacts:
+  PDR-001: { status: draft, date: 2026-04-11 }
+
+phase_4: {}
+
+blockers: []
+
+notes: >
+  MVP PDR covers full guest shopping flow (browse → cart → checkout → email)
+  plus read-only admin order view. Exercises all 5 workspaces. 5 open questions
+  must be resolved before entering Phase 1 (Feature Spec). Key capabilities to
+  spec: catalog browsing UI, cart, notification-service implementation,
+  admin-app auth + order view.
