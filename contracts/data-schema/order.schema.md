@@ -27,6 +27,8 @@ The `orders` table is the central record of a customer's or guest's intent to pu
 | `subtotal_minor` | `INT` | NO | Sum of all order line subtotals in minor currency units. |
 | `tax_minor` | `INT` | NO | Tax amount in minor currency units. |
 | `total_minor` | `INT` | NO | Grand total: subtotal + shipping + tax. |
+| `notification_id` | `UUID` | YES | ID of the order confirmation notification in notification-service. NULL until notification dispatched. |
+| `notification_status` | `VARCHAR(20)` | YES | Cached delivery status of the confirmation notification (`queued`, `sent`, `delivered`, `failed`). NULL until notification dispatched. Synced from notification-service. |
 | `payment_intent_id` | `VARCHAR(100)` | YES | External payment gateway intent ID. NULL until payment step. |
 | `idempotency_key` | `VARCHAR(64)` | YES | Client-supplied idempotency key for safe retries. |
 | `created_at` | `TIMESTAMPTZ` | NO | UTC timestamp of order creation. |
@@ -95,3 +97,28 @@ Cancelled is a terminal state. Orders in `shipped` or `delivered` status cannot 
 ## Related Schemas
 
 - `contracts/data-schema/product.schema.md` — SKU and product definitions in inventory-service.
+
+---
+
+## Table: `shipping_methods`
+
+| Column | Type | Nullable | Description |
+|---|---|---|---|
+| `id` | `UUID` | NO | Primary key. |
+| `tenant_id` | `UUID` | NO | Foreign key → tenants. Scopes shipping methods to a merchant. |
+| `name` | `VARCHAR(100)` | NO | Display name (e.g. "Standard Shipping"). |
+| `description` | `VARCHAR(500)` | YES | Human-readable description (e.g. "Delivery in 3-5 business days"). |
+| `cost_minor` | `INT` | NO | Shipping cost in minor currency units. |
+| `estimated_days_min` | `INT` | YES | Minimum estimated delivery days. |
+| `estimated_days_max` | `INT` | YES | Maximum estimated delivery days. |
+| `is_active` | `BOOLEAN` | NO | Whether this method is available for selection. Default: `true`. |
+| `created_at` | `TIMESTAMPTZ` | NO | UTC timestamp. |
+| `updated_at` | `TIMESTAMPTZ` | NO | UTC timestamp. |
+
+**Constraints:**
+- `UNIQUE (tenant_id, name)`
+- `cost_minor >= 0`
+
+**Notes:**
+- The `orders.shipping_method_id` column references `shipping_methods.id`.
+- Shipping methods are seeded via migration or admin API. No public management UI in MVP.

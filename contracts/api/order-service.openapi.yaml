@@ -2,16 +2,19 @@ openapi: "3.1.0"
 
 info:
   title: Order Service API
-  version: "1.0.0"
+  version: "1.1.0"
   description: >
-    Manages order creation, lifecycle transitions, and payment coordination.
+    Manages order creation, lifecycle transitions, payment coordination,
+    admin authentication, and shipping method configuration.
     All endpoints require a valid tenant context via the `X-Tenant-ID` header.
 
 servers:
-  - url: https://api.example.com/v1
+  - url: https://example.com/order-service/api/v1/
     description: Production
 
 tags:
+  - name: Auth
+    description: Admin authentication (login, MFA, token refresh)
   - name: Checkout
     description: Guest and authenticated checkout flows
   - name: Orders
@@ -21,6 +24,111 @@ tags:
 # Paths
 # ─────────────────────────────────────────────────────────────────────────────
 paths:
+
+  # ── Admin Authentication ────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: adminLogin
+      summary: Authenticate an admin user
+      tags: [Auth]
+      description: >
+        Authenticates a merchant admin user with email and password.
+        Returns a JWT. For `merchant_viewer` and `merchant_support` roles,
+        the JWT grants full read access. For `merchant_owner` and
+        `merchant_admin` roles, the JWT is flagged as pre-MFA and requires
+        TOTP verification before accessing admin endpoints.
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authentication successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/mfa/verify:
+    post:
+      operationId: verifyMfa
+      summary: Verify TOTP code for MFA
+      tags: [Auth]
+      description: >
+        Verifies a TOTP code for `merchant_owner` and `merchant_admin`
+        users. Requires a pre-MFA JWT from the login endpoint. Returns
+        a fully authenticated JWT on success.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MfaVerifyRequest"
+      responses:
+        "200":
+          description: MFA verification successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaVerifyResponse"
+        "401":
+          description: Invalid or expired TOTP code.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: JWT is not a pre-MFA token or MFA not required for this role.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/token/refresh:
+    post:
+      operationId: refreshToken
+      summary: Refresh an expired JWT
+      tags: [Auth]
+      description: >
+        Exchanges a valid (but possibly expired) JWT for a new one.
+        Refresh tokens have a longer TTL than access tokens.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRefreshRequest"
+      responses:
+        "200":
+          description: Token refreshed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenRefreshResponse"
+        "401":
+          description: Refresh token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ── Guest Session ──────────────────────────────────────────────────────────
   /checkout/guest/sessions:
@@ -55,6 +163,27 @@ paths:
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
 
+  # ── Shipping Methods ────────────────────────────────────────────────────────
+  /checkout/shipping-methods:
+    get:
+      operationId: listShippingMethods
+      summary: List available shipping methods
+      tags: [Checkout]
+      description: >
+        Returns the available shipping methods for the tenant. Used by the
+        storefront during checkout to populate the shipping method selector.
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      responses:
+        "200":
+          description: Shipping methods returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShippingMethod"
+
   # ── Order Placement ────────────────────────────────────────────────────────
   /checkout/guest/orders:
     post:
@@ -85,6 +214,12 @@ paths:
                 $ref: "#/components/schemas/Order"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Guest session token is missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: Conflict — one or more items are out of stock.
           content:
@@ -103,6 +238,8 @@ paths:
       description: >
         Returns full order details. Accessible to the owning Customer,
         any merchant admin role, and platform ops.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/TenantID"
         - name: orderId
@@ -118,6 +255,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Order"
+        "401":
+          description: Missing or invalid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Insufficient permissions (e.g., pre-MFA JWT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -126,12 +275,23 @@ paths:
       operationId: listOrders
       summary: List orders (merchant / platform roles only)
       tags: [Orders]
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/TenantID"
         - name: status
           in: query
           schema:
             $ref: "#/components/schemas/OrderStatus"
+        - name: q
+          in: query
+          description: >
+            Free-text search across order reference and guest email.
+            Returns orders where `reference` or `guest_email` contains the
+            search term (case-insensitive).
+          schema:
+            type: string
+            maxLength: 200
         - name: page
           in: query
           schema:
@@ -150,6 +310,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OrderPage"
+        "401":
+          description: Missing or invalid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Insufficient permissions (e.g., pre-MFA JWT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Components
@@ -189,6 +361,88 @@ components:
 
   schemas:
 
+    # ── Auth ────────────────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    LoginResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: JWT access token.
+        refresh_token:
+          type: string
+          description: Refresh token for obtaining new access tokens.
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds.
+        mfa_required:
+          type: boolean
+          description: >
+            True for `merchant_owner` and `merchant_admin` roles.
+            When true, the access_token is a pre-MFA token that cannot
+            access admin endpoints until MFA verification is completed.
+
+    MfaVerifyRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: 6-digit TOTP code from the user's authenticator app.
+
+    MfaVerifyResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: Fully authenticated JWT (MFA verified).
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+
+    TokenRefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    TokenRefreshResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+
+    # ── Checkout ────────────────────────────────────────────────────────────
     GuestSession:
       type: object
       required: [id, token, expires_at]
@@ -202,6 +456,32 @@ components:
         expires_at:
           type: string
           format: date-time
+
+    ShippingMethod:
+      type: object
+      required: [id, name, cost_minor]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Standard Shipping"
+        description:
+          type: string
+          example: "Delivery in 3-5 business days"
+        cost_minor:
+          type: integer
+          description: Shipping cost in minor currency units (e.g. cents).
+          example: 599
+        estimated_days_min:
+          type: integer
+          description: Minimum estimated delivery days.
+          example: 3
+        estimated_days_max:
+          type: integer
+          description: Maximum estimated delivery days.
+          example: 5
 
     PlaceGuestOrderRequest:
       type: object
@@ -271,6 +551,7 @@ components:
           type: string
           description: Tokenised payment instrument from the payment gateway SDK.
 
+    # ── Orders ──────────────────────────────────────────────────────────────
     Order:
       type: object
       required: [id, reference, status, lines, total, created_at]
@@ -283,6 +564,11 @@ components:
           example: "ORD-20240415-A3K9"
         status:
           $ref: "#/components/schemas/OrderStatus"
+        guest_email:
+          type: string
+          format: email
+          description: Email provided during guest checkout. Null for authenticated orders.
+          nullable: true
         lines:
           type: array
           items:
@@ -299,6 +585,20 @@ components:
           description: Order total in minor currency units.
         shipping_address:
           $ref: "#/components/schemas/Address"
+        notification_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >
+            ID of the confirmation notification sent via notification-service.
+            Null if notification has not been dispatched yet.
+        notification_status:
+          type: string
+          enum: [queued, sent, delivered, failed]
+          nullable: true
+          description: >
+            Delivery status of the order confirmation notification, synced
+            from notification-service. Null if no notification exists.
         created_at:
           type: string
           format: date-time

@@ -8,7 +8,7 @@ info:
     Intended for internal service-to-service use only. Not exposed publicly.
 
 servers:
-  - url: https://internal.example.com/v1
+  - url: https://example.com/notification-service/api/v1/
     description: Internal network only
 
 tags:

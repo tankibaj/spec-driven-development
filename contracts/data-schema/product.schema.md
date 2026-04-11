@@ -19,6 +19,7 @@ The product catalogue is managed by the inventory-service. A **Product** is a lo
 | `tenant_id` | `UUID` | NO | Foreign key → tenants. |
 | `name` | `VARCHAR(200)` | NO | Display name of the product. |
 | `description` | `TEXT` | YES | Rich-text product description. |
+| `image_url` | `VARCHAR(500)` | YES | URL of the product thumbnail image. NULL if no image uploaded. |
 | `is_active` | `BOOLEAN` | NO | Whether the product is visible in the storefront. Default: `true`. |
 | `created_at` | `TIMESTAMPTZ` | NO | UTC timestamp of record creation. |
 | `updated_at` | `TIMESTAMPTZ` | NO | UTC timestamp of last update. |
