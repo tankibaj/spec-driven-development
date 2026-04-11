@@ -22,7 +22,6 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 - You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
 - You **MUST** use the correct ID conventions (see Section 6) when creating files. Check existing IDs in the feature folder to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
-- You **MUST NOT** commit directly to `main` in any repo — spec-hub or workspace. All work goes on a feature branch (see `contracts/architecture/branching-strategy.md`).
 - You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
 - You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human. Do not modify contracts unilaterally.
 - You **SHOULD** prefer running multiple agents in parallel when features are independent and contracts are stable — one agent per workspace. Parallelism is the default preference; sequential is the fallback.
@@ -31,7 +30,7 @@ The `workspaces/` directory is part of this repo. Each service or app inside it 
 
 ## 2. Context Loading Strategy
 
-Load only what you need, when you need it. Front-loading every document at session start dilutes attention during implementation. The goal is to hold only the WP and the rules in active memory during the core implementation loop — everything else is looked up at the moment it is relevant.
+Load only what you need, when you need it. Do not pre-load reference documents speculatively.
 
 ### Always load at session start
 
@@ -44,29 +43,6 @@ Load only what you need, when you need it. Front-loading every document at sessi
 
 - The WP being implemented — read in full, this is your specification
 - `registry/routes.yaml` — confirm the target workspace
-
-### Load on demand
-
-Read each document only when you reach the step that requires it:
-
-| When you reach this step | Load this |
-|---|---|
-| Scaffolding an empty workspace | `contracts/architecture/workspace-bootstrap.md` |
-| Implementing `/health`, `/ready`, `/metrics` | `contracts/architecture/observability-standards.md` |
-| Implementing a specific API endpoint | `contracts/api/{service}.openapi.yaml` |
-| Writing ORM models or migrations | `contracts/data-schema/{entity}.schema.md` |
-| Making the first commit | `contracts/architecture/branching-strategy.md` |
-| Running the DoD checklist | `contracts/architecture/contract-validation.md` |
-| Adding a FastAPI endpoint | `.claude/skills/add-fastapi-endpoint/SKILL.md` |
-| Adding a database migration | `.claude/skills/add-alembic-migration/SKILL.md` |
-| Adding a React feature module | `.claude/skills/add-react-feature/SKILL.md` |
-| Running the DoD checklist | `.claude/skills/run-dod-checklist/SKILL.md` |
-| Drafting a Feature Concept (PDR) | `.claude/skills/sdd-feature-concept/SKILL.md` |
-| Drafting a Feature Spec with IA | `.claude/skills/sdd-feature-spec/SKILL.md` |
-| Generating TS + Work Packages | `.claude/skills/sdd-plan/SKILL.md` |
-| Drafting a new Feature Spec (legacy) | `.claude/skills/draft-feature-spec/SKILL.md` |
-
-Do not pre-load reference documents speculatively. The WP and the rules files are your primary references for the entire session — everything else is looked up as needed.
 
 ---
 
@@ -128,7 +104,7 @@ Both modes are subject to all constraints in Section 1. Review gates (human appr
 
 ## 5. Workflow Phases
 
-Every feature follows five phases (0 through 4). You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
+Every feature follows phases 0 through 4. The core flow starts at Phase 1 (Feature Spec). You may enter at any phase depending on what already exists (see Section 7: Session Resumption).
 
 ### Artifact Lifecycle
 
@@ -141,166 +117,37 @@ draft → awaiting_review → approved
 
 No artifact advances to the next phase until it reaches `approved`. The implementation agent verifies all prerequisites are `approved` before starting Phase 4.
 
-### Phase 0 -- Feature Concept (PDR)
-
-**Trigger:** A human wants to explore a new feature idea before committing to a full spec.
-
-**Steps:**
-
-1. Load `.claude/skills/sdd-feature-concept/SKILL.md` and follow the skill workflow.
-2. Help the human articulate the *what* and *why* — problem statement, proposed solution, success criteria, and scope boundaries.
-3. Write `PDR-XXX.md` to the feature folder.
-4. Update `status.yaml`: set `artifacts.PDR-XXX.status` to `awaiting_review`.
-5. After the human approves, update `status.yaml`: set `artifacts.PDR-XXX.status` to `approved`.
-
-**Do / Don't:**
-
-- DO keep the PDR focused on intent and scope — no implementation details.
-- DO include explicit "out of scope" boundaries to prevent scope creep in later phases.
-- DON'T proceed to Phase 1 until the human has approved the PDR.
-- DON'T skip Phase 0 if the human wants it — but the human may choose to start directly at Phase 1 with an existing FS.
-
 ### Phase 1 -- Feature Spec + Impact Analysis
 
-**Trigger:** A human has authored or updated an `FS-XXX.md` in a feature folder, requests help creating one, or the PDR has been approved.
+**Trigger:** A human has authored an FS or requests help creating one.
 
-**Steps:**
-
-1. Read the FS in full.
-2. Load `plan/reference/glossary.md`, `personas.md`, and `roles.md`.
-3. Evaluate each acceptance criterion (AC) for clarity and testability.
-
-**Decision tree:**
+**Routing:**
 
 ```
-IF the FS exists but has no ACs or ACs are incomplete:
-  → Help the human draft acceptance criteria based on the stated goal.
-  → Present proposed ACs with reasoning for each.
-  → STOP. Wait for human to approve and update the FS.
+IF no FS exists and human wants help creating one:
+  → Use the /sdd-feature-spec skill. It handles AC drafting, contract review,
+    and Impact Analysis generation.
 
-IF any AC is ambiguous, untestable, or contradicts existing contracts:
-  → List the specific ACs with suggested rewording and explain why.
-  → STOP. Wait for human to revise the FS.
+IF an FS exists and needs evaluation:
+  → Read it. Load domain context (glossary, personas, roles).
+  → Evaluate ACs for clarity and testability.
+  → If ACs are incomplete, ambiguous, or contradict contracts:
+    propose improvements and STOP for human revision.
+  → If all ACs are testable: generate Impact Analysis (IA-XXX.md),
+    update status.yaml, and STOP for human review.
 
-IF ACs reference APIs or data models:
-  → Cross-check against contracts/api/ and contracts/data-schema/.
-  → Flag any contradictions or missing contracts.
-
-IF the FS is complete and all ACs are testable:
-  → Generate the Impact Analysis (IA-XXX.md):
-    - Cross-check ACs against contracts/api/ and contracts/data-schema/.
-    - Identify affected services, new/changed endpoints, data model changes.
-    - Flag any contract contradictions or missing contracts.
-  → Update status.yaml: set artifacts.FS-XXX.status and artifacts.IA-XXX.status
-    to awaiting_review.
-  → STOP. Wait for human to approve both FS and IA before proceeding to Phase 2.
-
-IF no FS exists for the requested feature:
-  → Load `.claude/skills/sdd-feature-spec/SKILL.md` and follow it to help the human
-    draft the FS and IA. The human reviews and owns the final version.
-  → (Legacy alternative: `.claude/skills/draft-feature-spec/SKILL.md`)
-
-IF the FS declares `depends_on` features:
-  → Read status.yaml for each dependency.
-  → If all dependencies are phase_4 status: done → proceed normally.
-  → If any dependency is in_progress → note it to the human. FE WP may proceed
-    using contract mocks (MSW / Prism) against the dependency's OpenAPI spec.
-  → If any dependency has no status.yaml or is pre-phase-4 → ask the human
-    whether to block or proceed with mocks.
+IF the FS declares depends_on:
+  → Check dependency status.yaml. Dependencies done → proceed.
+    In progress → FE can mock, flag to human. Missing → ask human.
 ```
 
-### Phase 2 -- Generate Test Spec
+### Phase 2 + 3 -- Plan (Test Spec + Work Packages)
 
-**Trigger:** Human approves the FS and IA (all ACs are clear and testable).
+**Trigger:** Human approves the FS and IA.
 
-**Steps:**
+Use the `/sdd-plan` skill. It generates the Test Spec (Phase 2) and Work Packages (Phase 3) in sequence. The human reviews both artifacts together at the end.
 
-1. Ask the human: "Should I create a feature branch `spec/{Story-ID}-{slug}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once — Phase 3 continues on the same branch.
-2. For each AC in the FS, produce at least one test scenario.
-3. Each scenario MUST include:
-   - **Preconditions** -- system state before the test
-   - **Action** -- what the user or system does
-   - **Expected outcome** -- observable result that proves the AC is met
-4. Include both positive (happy path) and negative (error/edge case) scenarios where the AC implies them.
-5. Write the output to `TS-{next available number}.md` in the feature folder.
-6. Update `status.yaml`: set `artifacts.TS-XXX.status` to `awaiting_review`.
-7. Proceed directly to Phase 3 — the human reviews TS and WPs together.
-
-**Self-verification checklist (run before presenting to human):**
-
-- [ ] Every AC in the FS has at least one test scenario
-- [ ] Every test scenario traces back to exactly one AC (cite the AC ID)
-- [ ] No orphan scenarios (scenarios without a parent AC)
-- [ ] Preconditions, action, and expected outcome are explicit in every scenario
-- [ ] Domain terminology matches `plan/reference/glossary.md`
-- [ ] Negative and edge-case scenarios are included where ACs imply them
-
-**Do / Don't:**
-
-- DO group scenarios by AC for readability.
-- DO include edge cases (null inputs, permission boundaries, concurrency).
-- DON'T invent acceptance criteria that aren't in the FS. If you think one is missing, flag it to the human as a Phase 1 suggestion.
-
-### Phase 3 -- Generate Work Packages
-
-**Trigger:** Test Spec has been generated (Phase 2 complete).
-
-**Steps:**
-
-1. Check `registry/routes.yaml` to identify the target workspace(s) for this feature.
-2. Check `contracts/api/`, `contracts/data-schema/` and `contracts/architecture/`for existing interfaces.
-3. If the feature requires new or updated API endpoints, data entities, or architectural decisions:
-   - Create or update the relevant files in `contracts/` (see Section 5.1: Contract Maintenance).
-   - Present contract changes to the human for review before continuing.
-4. Split the TS into backend (`WP-XXX-BE.md`) and/or frontend (`WP-XXX-FE.md`) work packages.
-5. Each WP MUST include:
-   - **Objective** -- what this WP delivers
-   - **Acceptance criteria subset** -- the specific ACs this WP satisfies (copied verbatim, not referenced)
-   - **Test scenarios subset** -- the specific TS scenarios this WP must pass (copied verbatim, not referenced)
-   - **Relevant contracts** -- excerpts from or links to OpenAPI specs, data schemas
-   - **Implementation notes** -- technical guidance, patterns to follow, constraints
-   - **Target workspace** -- which repo under `workspaces/` this WP is implemented in
-6. Write files to the feature folder.
-7. Update `status.yaml`: set `artifacts.TS-XXX.status` and each `artifacts.WP-XXX-BE/FE.status` to `awaiting_review`.
-8. Present both the TS and WPs to the human for review together.
-9. After the human approves, update `status.yaml`: set TS and each WP status to `approved`, advance `current_phase` to `4`, and initialise each `phase_4` entry to `{ status: not_started }`.
-
-**Self-verification checklist:**
-
-- [ ] Every test scenario in the TS is covered by at least one WP
-- [ ] No scenario is split across multiple WPs without being fully present in each
-- [ ] Each WP is self-contained -- an implementer can complete it reading only this file
-- [ ] Target workspace is specified and exists in `registry/routes.yaml`
-- [ ] Contract references are accurate and up to date
-- [ ] ACs and test scenarios are copied into the WP verbatim, not just referenced by ID
-- [ ] Any new or updated contracts have been reviewed by the human
-
-### Implementation Order
-
-After generating WPs, state the recommended implementation order:
-
-```
-IF contracts for all required endpoints already exist and are stable:
-  → Recommend PARALLEL implementation.
-  → Add a note to the FE WP: "Mock the backend using Prism or MSW against
-    contracts/api/{service}.openapi.yaml during development and testing.
-    Switch to the real backend URL once WP-XXX-BE is done."
-
-IF the FE WP depends on new endpoints being built in the same feature:
-  → Recommend BE-first, FE-second as the fallback.
-  → Note in the FE WP which specific endpoints to mock and reference
-    the OpenAPI spec for response shapes.
-```
-
-**Do / Don't:**
-
-- DO copy relevant ACs and test scenarios into each WP verbatim. The WP must stand alone.
-- DO specify the target workspace repo explicitly.
-- DO create or update contracts when the feature requires new APIs, data models, or architectural decisions.
-- DO state the implementation order (parallel with mocks, or BE-first / FE-second) at the end of Phase 3.
-- DON'T create a WP that depends on reading another WP to understand scope.
-- DON'T contradict an existing contract without proposing an ADR.
-- DON'T proceed to Phase 4 until the human has reviewed and approved the TS and WPs.
+After approval, the skill updates `status.yaml`: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
 
 ### Phase 4 -- Implement in Workspace
 
