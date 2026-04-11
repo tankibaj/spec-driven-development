@@ -174,7 +174,7 @@ If any prerequisite fails, STOP and inform the human. Do not begin implementatio
 
 1. Navigate to the correct workspace submodule under `workspaces/`.
 2. Read the WP in full. The WP is your specification -- do not deviate from its scope.
-3. Ask the human: "Should I create a feature branch `feat/{Story-ID}-{WP-ID}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once per WP — do not ask again mid-implementation.
+3. Ask the human: "Should I create a feature branch `feat/{story-ID}-{WP-ID}` for this work, or will you manage branching?" Create the branch if yes, otherwise commit to the current branch. Ask once per WP — do not ask again mid-implementation.
 4. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`.
 5. Implement the feature as described. After each significant step, update `status.yaml` `last_checkpoint` with a short description of what was just completed (e.g. `"saga step 2 — reserve stock"`). This is your breadcrumb trail for session recovery.
 6. Write tests that map directly to the test scenarios listed in the WP.

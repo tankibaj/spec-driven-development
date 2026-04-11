@@ -22,13 +22,13 @@
 One branch per feature, covering all spec phases (Phase 2 through Phase 3, plus status updates).
 
 ```
-spec/{Story-ID}-{slug}
+spec/{story-ID}-{slug}
 ```
 
 | Example | Meaning |
 |---|---|
-| `spec/Story-0001-guest-checkout` | All spec artifacts for guest checkout feature |
-| `spec/Story-0002-user-registration` | All spec artifacts for user registration feature |
+| `spec/story-0001-guest-checkout` | All spec artifacts for guest checkout feature |
+| `spec/story-0002-user-registration` | All spec artifacts for user registration feature |
 
 A single branch covers the TS, all WPs, contract changes, and `status.yaml` updates for that
 feature. The human reviews and merges it when the feature reaches Phase 4.
@@ -38,14 +38,14 @@ feature. The human reviews and merges it when the feature reaches Phase 4.
 One branch per Work Package. BE and FE always get separate branches.
 
 ```
-feat/{Story-ID}-{WP-ID}
+feat/{story-ID}-{WP-ID}
 ```
 
 | Example | Meaning |
 |---|---|
-| `feat/Story-0001-WP-001-BE` | Backend implementation of guest checkout |
-| `feat/Story-0001-WP-001-FE` | Frontend implementation of guest checkout |
-| `feat/Story-0002-WP-002-BE` | Backend implementation of user registration |
+| `feat/story-0001-WP-001-BE` | Backend implementation of guest checkout |
+| `feat/story-0001-WP-001-FE` | Frontend implementation of guest checkout |
+| `feat/story-0002-WP-002-BE` | Backend implementation of user registration |
 
 Using the WP ID means two agents can work on different WPs in the same workspace repo
 simultaneously without branch conflicts.
@@ -57,7 +57,7 @@ simultaneously without branch conflicts.
 Reference both the Story ID and WP ID in every commit message.
 
 ```
-{type}({Story-ID}): {short description}
+{type}({story-ID}): {short description}
 
 {optional body}
 
@@ -78,7 +78,7 @@ WP: {WP-ID}
 ### Examples
 
 ```
-feat(Story-0001): implement guest order placement saga
+feat(story-0001): implement guest order placement saga
 
 Implements the 6-step saga: validate cart → reserve stock → create payment
 intent → capture payment → create order record → dispatch notification.
@@ -87,7 +87,7 @@ WP: WP-001-BE
 ```
 
 ```
-spec(Story-0002): generate test spec and work packages
+spec(story-0002): generate test spec and work packages
 
 Covers 6 ACs across 18 test scenarios. Parallel implementation recommended.
 
@@ -95,7 +95,7 @@ WP: TS-002, WP-002-BE, WP-002-FE
 ```
 
 ```
-chore(Story-0001): bootstrap order-service workspace
+chore(story-0001): bootstrap order-service workspace
 
 Applies standard FastAPI scaffold per workspace-bootstrap.md.
 
@@ -130,7 +130,7 @@ Configure the following on `main` in every repo:
 
 Before creating the TS or any spec artifact, ask the human:
 
-> "Should I create a feature branch `spec/{Story-ID}-{slug}` for this work, or will you manage branching?"
+> "Should I create a feature branch `spec/{story-ID}-{slug}` for this work, or will you manage branching?"
 
 - If **yes** → create the branch and commit all spec artifacts there.
 - If **human manages** → commit to whatever branch is currently active. Do not create a branch.
@@ -142,7 +142,7 @@ it continues on the same branch.
 
 Before the bootstrap commit or any implementation commit, ask the human:
 
-> "Should I create a feature branch `feat/{Story-ID}-{WP-ID}` for this work, or will you manage branching?"
+> "Should I create a feature branch `feat/{story-ID}-{WP-ID}` for this work, or will you manage branching?"
 
 - If **yes** → create the branch and commit all implementation work there.
 - If **human manages** → commit to whatever branch is currently active. Do not create a branch.

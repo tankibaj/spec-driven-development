@@ -104,11 +104,11 @@ See `plan/reference/roles.md` for the full role hierarchy.
 
 | Priority | Feature | Story ID | Status |
 |----------|---------|----------|--------|
-| 1 | **MVP Guest Shopping Experience** | **Story-0001** | **PDR draft — entering Phase 1** |
+| 1 | **MVP Guest Shopping Experience** | **story-0001** | **PDR draft — entering Phase 1** |
 | 2 | Customer Registration & Accounts | TBD | Not started |
 | 3 | Order Management Dashboard (full) | TBD | Not started |
 
-> **Note:** Story-0001 (MVP) covers the full guest shopping flow end-to-end:
+> **Note:** story-0001 (MVP) covers the full guest shopping flow end-to-end:
 > product catalog (browse + stock), cart, guest checkout, order confirmation
 > email, and a read-only admin order view. It exercises all 5 workspaces and
 > is the first end-to-end runnable product.
@@ -124,5 +124,5 @@ See `plan/reference/roles.md` for the full role hierarchy.
 | Frontend | TypeScript, React 19, Vite, Zustand, Biome, Vitest, MSW | `contracts/architecture/workspace-bootstrap.md` |
 | Observability | `/health`, `/ready`, `/metrics`, structured JSON logging | `contracts/architecture/observability-standards.md` |
 | Contract Testing | Schemathesis (BE), Pact (inter-service), MSW (FE) | `contracts/architecture/contract-validation.md` |
-| Branching | `spec/` for spec-hub, `feat/{Story-ID}-{WP-ID}` for workspaces | `contracts/architecture/branching-strategy.md` |
+| Branching | `spec/` for spec-hub, `feat/{story-ID}-{WP-ID}` for workspaces | `contracts/architecture/branching-strategy.md` |
 | Methodology | Spec Driven Development (SDD), maturity level 2 (Spec-First) | `registry/project.yaml` |

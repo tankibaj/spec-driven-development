@@ -59,7 +59,7 @@ flowchart TD
 
 Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review and approve via `status.yaml` before anything moves forward.
 
-To start a new feature: create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `Story-0002-user-registration`), then invoke the skills in order. Every artifact must reach `approved` status before the next phase begins.
+To start a new feature: create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `story-0002-user-registration`), then invoke the skills in order. Every artifact must reach `approved` status before the next phase begins.
 
 ---
 
@@ -137,7 +137,7 @@ spec-hub/
 │
 ├── plan/
 │   ├── spec/
-│   │   └── Story-1234-{slug}/     # One folder per feature (ticket ID + slug)
+│   │   └── story-1234-{slug}/     # One folder per feature (ticket ID + slug)
 │   │       ├── PDR-XXX.md         # Feature Concept (Product Discovery Record)
 │   │       ├── FS-XXX.md          # Feature Spec
 │   │       ├── IA-XXX.md          # Impact Analysis
@@ -176,9 +176,9 @@ spec-hub/
 
 | Repo | Pattern | Example |
 |---|---|---|
-| Spec-hub | `spec/{Story-ID}-{slug}` | `spec/Story-0001-guest-checkout` |
-| Workspace (backend) | `feat/{Story-ID}-{WP-ID}` | `feat/Story-0001-WP-001-BE` |
-| Workspace (frontend) | `feat/{Story-ID}-{WP-ID}` | `feat/Story-0001-WP-001-FE` |
+| Spec-hub | `spec/{story-ID}-{slug}` | `spec/story-0001-guest-checkout` |
+| Workspace (backend) | `feat/{story-ID}-{WP-ID}` | `feat/story-0001-WP-001-BE` |
+| Workspace (frontend) | `feat/{story-ID}-{WP-ID}` | `feat/story-0001-WP-001-FE` |
 
 - **Spec-hub:** one branch per feature. All spec artifacts committed there. Merged to `main` when the feature reaches Phase 4.
 - **Workspaces:** one branch per Work Package. BE and FE always get separate branches.
@@ -187,9 +187,9 @@ spec-hub/
 ### Commit message convention
 
 ```
-feat(Story-0001): implement guest order placement saga    ← workspace
-spec(Story-0002): generate test spec and work packages   ← spec-hub
-chore(Story-0001): bootstrap order-service workspace     ← scaffold
+feat(story-0001): implement guest order placement saga    ← workspace
+spec(story-0002): generate test spec and work packages   ← spec-hub
+chore(story-0001): bootstrap order-service workspace     ← scaffold
 ```
 
 Always include the Story ID in parentheses. See `contracts/architecture/branching-strategy.md` for the full convention.
@@ -201,7 +201,7 @@ Always include the Story ID in parentheses. See `contracts/architecture/branchin
 Every feature folder contains a `status.yaml` file that the AI agent keeps current throughout the workflow. It is the single source of truth for where a feature stands.
 
 ```yaml
-feature: Story-0001-guest-checkout
+feature: story-0001-guest-checkout
 current_phase: 4
 
 artifacts:                              # draft | awaiting_review | approved | rejected
