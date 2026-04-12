@@ -38,10 +38,10 @@ Load only what you need, when you need it. Do not pre-load reference documents s
 - `CLAUDE.learnings.md`
 - `registry/project.yaml` — project domain, tech stack, standards
 - All files in `.claude/rules/`
-- `status.yaml` for the active feature
 
 ### Load when entering Phase 4
 
+- `status.yaml` for the active feature
 - The WP being implemented — read in full, this is your specification
 - `registry/routes.yaml` — confirm the target workspace
 
