@@ -1,21 +1,14 @@
-# Specification Hub
+# Spec-Driven Development (SDD) Blueprint
 
-The central repo for all feature specs, API contracts, and architecture decisions — where every feature is defined before it's built.
+Most AI coding tools assume you have a monorepo. One codebase, one context, one agent that can see everything.
 
-Most software projects discover requirements during implementation — the most expensive time to find them. Missing acceptance criteria, unclear edge cases, and contradicting contracts surface as bugs, rework, and wasted sprints.
+That's not reality for most companies.
 
-**Spec Driven Development (SDD)** addresses this by requiring testable acceptance criteria, impact analysis, and self-contained work packages before implementation begins. AI agents do the breakdown. Humans review and approve. Nothing moves forward until the spec is right.
+Enterprises run polyrepo architectures — separate services, separate teams, separate repos. Each codebase is big. Each has its own patterns, its own history, its own conventions. Merging them into a monorepo isn't happening.
 
-### Why a separate spec hub?
+So when you use AI coding tools, you hit a wall. You can get help inside one codebase at a time. But the coordination — decomposing a feature across services, keeping contracts in sync, sequencing work so nothing breaks — that's the hard part. And no tool solves it.
 
-In polyrepo architectures — where each microservice and app has its own repository — features routinely span multiple repos. A guest checkout feature might touch the order service, inventory service, and storefront app simultaneously. If specs lived inside each code repo, they'd be fragmented across repos — no single place to see the full picture, no way to catch contract conflicts before implementation.
-
-The spec hub solves this by centralizing all specifications, contracts, and architecture decisions in one repo. Code repos (linked as git submodules under `workspaces/`) stay focused on implementation. This gives you:
-
-- **Single source of truth** — one place to see every feature, every contract, every decision across all services
-- **Independent lifecycles** — specs are reviewed and approved at their own pace, without triggering CI in code repos
-- **Safe parallelism** — multiple AI agents can implement different work packages simultaneously without stepping on each other
-- **Cross-service visibility** — impact analysis catches breaking changes across service boundaries before code is written
+**SDD Blueprint** is a framework that solves this. It introduces a central spec repository that sits above your service repos and coordinates AI-assisted development across them.
 
 ---
 
@@ -23,7 +16,8 @@ The spec hub solves this by centralizing all specifications, contracts, and arch
 
 1. **Clone** the repo with workspace submodules:
    ```bash
-   git clone --recurse-submodules <repo-url>
+    git clone --recurse-submodules git@github.com:tankibaj/spec-driven-dev.git
+    cd spec-driven-dev
    ```
    Already cloned without submodules? Run `git submodule init && git submodule update`.
 
@@ -32,13 +26,20 @@ The spec hub solves this by centralizing all specifications, contracts, and arch
    - `plan/reference/` — product glossary, user personas, role definitions
    - `contracts/` — API schemas, data models, architecture decisions
 
-3. **Understand the workflow** — read "How a Feature Goes From Idea to Code" below.
-
 **AI agents:** your entry point is `CLAUDE.md`, loaded automatically on every session.
 
 ---
 
-## How a Feature Goes From Idea to Code
+## How It Works
+
+SDD decomposes a feature into four phases. Each phase produces artifacts. Each artifact requires human approval before the next phase begins.
+
+```
+Phase 1           Phase 2           Phase 3            Phase 4
+Feature Concept → Feature Spec   → Test Spec         → Implementation
+(what & why)      (acceptance      + Work Packages      (AI executes
+                   criteria)        (scoped units)       WPs in parallel)
+```
 
 ```mermaid
 flowchart TD
@@ -49,6 +50,38 @@ flowchart TD
     BE --> BR["Backend Repo (via git submodule)"]
     FE --> FR["Frontend Repo (via git submodule)"]
 ```
+
+### Phase 1 — Feature Concept (PDR)
+
+Define **what** to build, **why**, and **for whom**. No implementation details. Just the problem and the proposed solution at a high level.
+
+Human reviews and approves before moving on.
+
+### Phase 2 — Feature Spec (FS)
+
+Define **acceptance criteria** — testable, unambiguous conditions that the feature must satisfy. Run impact analysis across workspaces. Identify which contracts (OpenAPI specs, data schemas) are affected and how.
+
+Human reviews and approves before moving on.
+
+### Phase 3 — Test Spec + Work Packages (TS + WPs)
+
+Break the feature spec into **scoped work packages**, each targeting a single workspace repo. Each WP has:
+
+- A target workspace (e.g. `order-service`, `storefront-app`)
+- Specific acceptance criteria it satisfies
+- Contract changes it must implement
+- A definition of done with test requirements
+
+Work packages are sized so an AI agent can execute one in a single session with full context. Independent WPs targeting different repos run in parallel.
+
+Human reviews and approves before moving on.
+
+### Phase 4 — Implementation
+
+AI agents execute the approved work packages. Each agent works inside a single workspace repo with a scoped, well-defined task. Contracts ensure the pieces fit together. Tests verify each WP against the acceptance criteria.
+
+No guessing. No drift. Every line of code traces back to an approved spec.
+
 
 | Step | Owner | Reviewer | Skill |
 |---|---|---|---|
