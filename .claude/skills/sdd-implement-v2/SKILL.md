@@ -49,7 +49,7 @@ Steps:
 3. Read ALL WP files in the feature folder (for planning and pre-flight — not for implementation)
 4. Load `registry/routes.yaml` — map each WP to its target workspace
 5. Load orchestrator reference:
-   - `.claude/skills/sdd-implement/references/checkpoint-taxonomy.md` — for understanding checkpoint state across all WPs
+   - `${CLAUDE_SKILL_DIR}/references/checkpoint-taxonomy.md` — for understanding checkpoint state across all WPs
 
 Do NOT load executor references at this level (`be-guide.md`, `fe-guide.md`, `resume-protocol.md`, `executor-protocol.md`). Each executor sub-agent loads its own.
 
@@ -143,14 +143,14 @@ You are an executor implementing a single Work Package. Read and follow the exec
 1. .claude/skills/sdd-implement-v2/references/executor-protocol.md
    — Your operating instructions. Read in full before starting.
 
-2. .claude/skills/sdd-implement/references/{be-guide.md OR fe-guide.md}
+2. .claude/skills/sdd-implement-v2/references/{be-guide.md OR fe-guide.md}
    — Checkpoint procedures for {backend OR frontend} workspaces.
 
 3. plan/spec/{feature-folder}/{WP-ID}.md
    — The Work Package. This is your specification.
 
 {IF resuming — include this line:}
-4. .claude/skills/sdd-implement/references/resume-protocol.md
+4. .claude/skills/sdd-implement-v2/references/resume-protocol.md
    — Resume procedure. Your last checkpoint was: "{last_checkpoint value}"
 
 ## Context
