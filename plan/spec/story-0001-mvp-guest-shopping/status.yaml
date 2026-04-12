@@ -1,5 +1,5 @@
 feature: story-0001-mvp-guest-shopping
-current_phase: 3
+current_phase: 4
 
 artifacts:
   PDR-001: { status: approved, date: 2026-04-11 }
@@ -24,16 +24,29 @@ artifacts:
   WP-008-FE: { status: approved, date: 2026-04-11 }
   WP-009-FE: { status: approved, date: 2026-04-11 }
 
-phase_4: {}
+phase_4:
+  WP-001-BE: { status: done }
+  WP-002-BE: { status: done }
+  WP-003-BE: { status: done }
+  WP-004-BE: { status: done }
+  WP-005-BE: { status: done }
+  WP-006-BE: { status: done }
+  WP-007-BE: { status: done }
+  WP-008-BE: { status: done }
+  WP-001-FE: { status: done }
+  WP-002-FE: { status: done }
+  WP-003-FE: { status: done }
+  WP-004-FE: { status: done }
+  WP-005-FE: { status: done }
+  WP-006-FE: { status: done }
+  WP-007-FE: { status: done }
+  WP-008-FE: { status: done }
+  WP-009-FE: { status: done }
 
 blockers: []
 
 notes: >
-  Phase 2+3 complete. TS-001 has 64 scenarios covering all 31 ACs + 9 observability
-  scenarios across 3 backend services. 17 WPs generated (8 BE + 9 FE) across
-  5 workspaces. 4 contracts updated with additive changes (auth endpoints,
-  shipping methods, search param, image_url, notification_status, bearerAuth,
-  401/403 responses, shipping_methods table). All contract changes are additive —
-  no breaking changes. 5 WPs exceed the 3-AC max with justified tight coupling.
-  Implementation order: 5 waves with parallel opportunities in each wave.
-  Human review required for all artifacts before advancing to Phase 4.
+  Phase 4 complete (2026-04-12). All 17 WPs implemented across 5 workspaces
+  (inventory-service, order-service, notification-service, storefront-app,
+  admin-app). All DoD checklists passed. All tests green. No blockers.
+  Ready for human review.
