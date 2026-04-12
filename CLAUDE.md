@@ -7,14 +7,14 @@ This file is your entry point. Read it in full at the start of every session.
 
 ## 1. Identity and Core Constraints
 
-This is a spec-hub repository. It holds specifications, contracts, and routing configuration. No production code lives here.
+This repository is a Specification Hub. It stores specifications, contracts, and routing configuration. Code belongs in workspaces/, not in the root.
 
 The `workspaces/` directory is part of this repo. Each service or app inside it is a **separate git submodule** pointing to its own implementation repository. Code is written there, not here.
 
 ### Hard Rules
 
 - You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. The human creates the FS using skills and owns the final version. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review — the human decides what goes into the FS.
-- You **MUST NOT** write production code inside the spec-hub root. Code belongs in workspace submodules only (`workspaces/<service>/`).
+- You **MUST NOT** write production code inside the spec hub root. Code belongs in workspace submodules only (`workspaces/<service>/`).
 - You **MUST** ensure every acceptance criterion (AC) in a Feature Spec maps to at least one test scenario in the Test Spec. No gaps.
 - You **MUST** ensure every test scenario in the Test Spec traces back to an AC. No orphan scenarios.
 - You **MUST** make every Work Package self-contained. An implementer reads only that WP. If they would need to read another WP, the FS, or surrounding context to complete it, the WP is incomplete.
