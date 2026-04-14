@@ -1,6 +1,6 @@
 ---
-name: sdd-feature-concept
-description: Writes a Feature Concept (PDR) for Spec-Driven Development. Defines what to build, why, and for whom before any spec work begins. Use when starting a new feature.
+name: prd
+description: Writes a Feature Concept (PRD) for Spec-Driven Development. Defines what to build, why, and for whom before any spec work begins. Use when starting a new feature.
 argument-hint: "[feature name or idea]"
 allowed-tools: Read Glob
 disable-model-invocation: true
@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 ## Overview
 
-The Feature Concept (PDR) is the business case that precedes all specification work. It defines WHAT we're building and WHY — before anyone thinks about HOW.
+The Feature Concept (PRD) is the business case that precedes all specification work. It defines WHAT we're building and WHY — before anyone thinks about HOW.
 
 Every artifact in the SDD chain (FS, TS, WPs) traces back to this document. If a Work Package can't trace to a business reason in the concept, it shouldn't exist.
 
@@ -23,7 +23,7 @@ If `$ARGUMENTS` is empty, ask the user what feature to work on. Do not infer fro
 - Defining the business case before specification work
 - Deciding whether UX/UI design is needed
 
-**When NOT to use:** Writing the Feature Spec (use `/sdd-feature-spec`), implementation work, TS/WP generation, trivial changes that don't need a business case.
+**When NOT to use:** Writing the Feature Spec (use `/spec`), implementation work, TS/WP generation, trivial changes that don't need a business case.
 
 ## The Workflow
 
@@ -32,7 +32,7 @@ CONCEPT ──→ CLARIFY ──→ SCOPE ──→ PRESENT ──→ HAND OFF
    │           │          │          │            │
    ▼           ▼          ▼          ▼            ▼
  What &      Surface    One or    Human        Ready for
- why         assumptions many?    reviews      /sdd-feature-spec
+ why         assumptions many?    reviews      /spec
 ```
 
 Each phase has a human review gate. Do not advance until confirmed.
@@ -91,7 +91,7 @@ SCOPE CHECK:
 - Would the FS likely have >10 ACs?                 → consider splitting
 ```
 
-If splitting is recommended, propose separate concepts — each with its own Story-XXXX folder and its own PDR.
+If splitting is recommended, propose separate concepts — each with its own Story-XXXX folder and its own PRD.
 
 Present the recommendation. Human decides.
 
@@ -119,7 +119,7 @@ After approval:
 feature: Story-XXXX-slug
 current_phase: 0
 artifacts:
-  PDR: { status: approved, date: YYYY-MM-DD }
+  PRD: { status: approved, date: YYYY-MM-DD }
 phase_4: {}
 blockers: []
 notes: ~
@@ -129,7 +129,7 @@ notes: ~
 
 ```
 Feature Concept approved and saved to plan/spec/Story-XXXX-slug/.
-Ready to write the Feature Spec with /sdd-feature-spec [story-id] [slug]
+Ready to write the Feature Spec with /spec [story-id] [slug]
 ```
 
 ## Common Rationalizations

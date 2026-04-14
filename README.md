@@ -43,7 +43,7 @@ Feature Concept → Feature Spec   → Test Spec         → Implementation
 
 ```mermaid
 flowchart TD
-    PDR["Feature Concept (PDR): What + Why"] --> FS["Feature Spec (FS): Goals + Acceptance Criteria + Impact Analysis"]
+    PRD["Feature Concept (PRD): What + Why"] --> FS["Feature Spec (FS): Goals + Acceptance Criteria + Impact Analysis"]
     FS --> TS["Test Spec (TS): Test scenarios derived from FS"]
     TS --> BE["Work Package — Backend (WP-BE)"]
     TS --> FE["Work Package — Frontend (WP-FE)"]
@@ -51,7 +51,7 @@ flowchart TD
     FE --> FR["Frontend Repo (via git submodule)"]
 ```
 
-### Phase 1 — Feature Concept (PDR)
+### Phase 1 — Feature Concept (PRD)
 
 Define **what** to build, **why**, and **for whom**. No implementation details. Just the problem and the proposed solution at a high level.
 
@@ -85,9 +85,9 @@ No guessing. No drift. Every line of code traces back to an approved spec.
 
 | Step | Owner | Reviewer | Skill |
 |---|---|---|---|
-| Feature Concept (PDR) | Human + AI agent | Human | `/sdd-feature-concept` |
-| Feature Spec (FS) + Impact Analysis | Human + AI agent | Human | `/sdd-feature-spec` |
-| Test Spec (TS) + Work Packages (WP) | AI agent | Human (reviews both together) | `/sdd-plan` |
+| Feature Concept (PRD) | Human + AI agent | Human | `/prd` |
+| Feature Spec (FS) + Impact Analysis | Human + AI agent | Human | `/spec` |
+| Test Spec (TS) + Work Packages (WP) | AI agent | Human (reviews both together) | `/plan` |
 | Implementation | AI agent | Human (DoD checklist) | — |
 
 Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review and approve via `status.yaml` before anything moves forward.
@@ -104,9 +104,9 @@ Skills are reusable workflows that guide the AI agent through each SDD phase. Yo
 
 | Skill | When to use | What it produces |
 |---|---|---|
-| `/sdd-feature-concept` | Starting a new feature — define *what* and *why* before any spec work | `PDR-XXX.md` in the feature folder |
-| `/sdd-feature-spec` | After the concept is approved — define acceptance criteria with impact analysis | `FS-XXX.md` + `IA-XXX.md` |
-| `/sdd-plan` | After the FS is approved — derive test scenarios and split into work packages | `TS-XXX.md` + `WP-XXX-BE.md` / `WP-XXX-FE.md` |
+| `/prd` | Starting a new feature — define *what* and *why* before any spec work | `PRD-XXX.md` in the feature folder |
+| `/spec` | After the concept is approved — define acceptance criteria with impact analysis | `FS-XXX.md` + `IA-XXX.md` |
+| `/plan` | After the FS is approved — derive test scenarios and split into work packages | `TS-XXX.md` + `WP-XXX-BE.md` / `WP-XXX-FE.md` |
 | `/run-dod-checklist` | Before marking a WP as done — runs linters, type checks, tests, and contract validation | Pass/fail report |
 
 ### Implementation Skills
@@ -171,7 +171,7 @@ spec-hub/
 ├── plan/
 │   ├── spec/
 │   │   └── story-1234-{slug}/     # One folder per feature (ticket ID + slug)
-│   │       ├── PDR-XXX.md         # Feature Concept (Product Discovery Record)
+│   │       ├── PRD-XXX.md         # Feature Concept (Product Requirements Document)
 │   │       ├── FS-XXX.md          # Feature Spec
 │   │       ├── IA-XXX.md          # Impact Analysis
 │   │       ├── TS-XXX.md          # Test Spec
@@ -238,7 +238,7 @@ feature: story-0001-guest-checkout
 current_phase: 4
 
 artifacts:                              # draft | awaiting_review | approved | rejected
-  PDR-001:   { status: approved, date: 2026-04-03 }
+  PRD-001:   { status: approved, date: 2026-04-03 }
   FS-001:    { status: approved, date: 2026-04-03 }
   IA-001:    { status: approved, date: 2026-04-03 }
   TS-001:    { status: approved, date: 2026-04-03 }
@@ -261,7 +261,7 @@ When a session is interrupted, the agent reads `status.yaml` first and resumes f
 
 | Artifact | Pattern | Example |
 |---|---|---|
-| Feature Concept (PDR) | `PDR-XXX` | `PDR-001` |
+| Feature Concept (PRD) | `PRD-XXX` | `PRD-001` |
 | Feature Spec | `FS-XXX` | `FS-001` |
 | Impact Analysis | `IA-XXX` | `IA-001` |
 | Test Spec | `TS-XXX` | `TS-001` |

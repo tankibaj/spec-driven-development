@@ -1,5 +1,5 @@
 ---
-name: sdd-implement-v2
+name: implement-v2
 description: Orchestrates Phase 4 implementation — validates, plans execution order, and delegates each WP to an executor sub-agent with minimal context. Use after TS and WPs are approved (Phase 4).
 argument-hint: "[story-id] [slug]"
 ---
@@ -17,9 +17,9 @@ When multiple WPs are independent and target different workspaces, launch execut
 ## When to Use
 
 - After the human approves TS and all WPs (`status.yaml` shows `current_phase: 4`)
-- When all prerequisite artifacts (PDR, IA, FS, TS, WPs) are `approved`
+- When all prerequisite artifacts (PRD, IA, FS, TS, WPs) are `approved`
 
-**When NOT to use:** Before WP approval, for spec drafting (use `sdd-feature-spec`), for TS/WP generation (use `sdd-plan`).
+**When NOT to use:** Before WP approval, for spec drafting (use `/spec`), for TS/WP generation (use `/plan`).
 
 ---
 
@@ -108,7 +108,7 @@ IF all checks pass:
 
 Determine the order and parallelism for all WPs, then delegate to executor sub-agents.
 
-1. **Read dependency info** from each WP (sdd-plan puts dependency order in every WP)
+1. **Read dependency info** from each WP (plan puts dependency order in every WP)
 2. **Skip completed WPs**: if `phase_4.WP-XXX.status == done`, skip it
 3. **Determine execution approach**:
 
@@ -140,17 +140,17 @@ You are an executor implementing a single Work Package. Read and follow the exec
 
 ## Files to Load
 
-1. .claude/skills/sdd-implement-v2/references/executor-protocol.md
+1. .claude/skills/implement-v2/references/executor-protocol.md
    — Your operating instructions. Read in full before starting.
 
-2. .claude/skills/sdd-implement-v2/references/{be-guide.md OR fe-guide.md}
+2. .claude/skills/implement-v2/references/{be-guide.md OR fe-guide.md}
    — Checkpoint procedures for {backend OR frontend} workspaces.
 
 3. plan/spec/{feature-folder}/{WP-ID}.md
    — The Work Package. This is your specification.
 
 {IF resuming — include this line:}
-4. .claude/skills/sdd-implement-v2/references/resume-protocol.md
+4. .claude/skills/implement-v2/references/resume-protocol.md
    — Resume procedure. Your last checkpoint was: "{last_checkpoint value}"
 
 ## Context

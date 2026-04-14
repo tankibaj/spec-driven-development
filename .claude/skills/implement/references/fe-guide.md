@@ -1,6 +1,6 @@
 # Frontend Implementation Guide (TypeScript / React)
 
-Reference for the sdd-implement skill when executing frontend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
+Reference for the implement skill when executing frontend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
 
 Load this file when the target workspace has `type: frontend` in `registry/routes.yaml`.
 

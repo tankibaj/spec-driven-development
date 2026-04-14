@@ -2,7 +2,7 @@ feature: story-0001-mvp-guest-shopping
 current_phase: 4
 
 artifacts:
-  PDR-001: { status: approved, date: 2026-04-11 }
+  PRD-001: { status: approved, date: 2026-04-11 }
   IA-001: { status: approved, date: 2026-04-11 }
   FS-001: { status: approved, date: 2026-04-11 }
   TS-001: { status: approved, date: 2026-04-11 }

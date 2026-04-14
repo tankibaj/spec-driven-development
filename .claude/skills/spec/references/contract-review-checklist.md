@@ -1,6 +1,6 @@
 # Contract Review Checklist
 
-Use during Step 7 (Contract Review) of the sdd-feature-spec workflow. Review each changed contract against these criteria before including the change summary in the Feature Spec.
+Use during Step 7 (Contract Review) of the spec workflow. Review each changed contract against these criteria before including the change summary in the Feature Spec.
 
 ---
 

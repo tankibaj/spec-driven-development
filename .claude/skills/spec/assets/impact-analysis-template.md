@@ -35,7 +35,7 @@ Use this structure when writing the `IA-XXX.md` file to the feature folder.
 # Impact Analysis: [Feature Name]
 
 **Feature:** `Story-XXXX-[slug]`
-**Feature Concept:** PDR — [concept name]
+**Feature Concept:** PRD — [concept name]
 **Analyst:** [PO + Architect names]
 **Date:** YYYY-MM-DD
 
