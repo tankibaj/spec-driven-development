@@ -1,6 +1,6 @@
 # AC-to-WP Splitting Guide
 
-Use during Step 3.2 of the sdd-plan workflow. Defines when to split ACs into separate WPs and when to keep them together.
+Use during Step 3.2 of the plan workflow. Defines when to split ACs into separate WPs and when to keep them together.
 
 ---
 

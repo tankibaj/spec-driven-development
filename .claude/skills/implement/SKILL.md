@@ -1,5 +1,5 @@
 ---
-name: sdd-implement
+name: implement
 description: Implements approved Work Packages in workspace repos. Executes WPs for a feature — runs parallel agents when independent WPs target different workspaces. Use after TS and WPs are approved (Phase 4).
 argument-hint: "[story-id] [slug]"
 ---
@@ -17,9 +17,9 @@ When multiple WPs are independent and target different workspaces, run them in p
 ## When to Use
 
 - After the human approves TS and all WPs (`status.yaml` shows `current_phase: 4`)
-- When all prerequisite artifacts (PDR, IA, FS, TS, WPs) are `approved`
+- When all prerequisite artifacts (PRD, IA, FS, TS, WPs) are `approved`
 
-**When NOT to use:** Before WP approval, for spec drafting (use `/sdd-feature-spec`), for TS/WP generation (use `/sdd-plan`).
+**When NOT to use:** Before WP approval, for spec drafting (use `/spec`), for TS/WP generation (use `/plan`).
 
 ## Interaction Model
 
@@ -167,7 +167,7 @@ IF all checks pass:
 
 Determine the order and parallelism for all WPs.
 
-1. **Read dependency info** from each WP (sdd-plan puts dependency order in every WP)
+1. **Read dependency info** from each WP (plan puts dependency order in every WP)
 2. **Skip completed WPs**: if `phase_4.WP-XXX.status == done`, skip it
 3. **Determine execution approach**:
 

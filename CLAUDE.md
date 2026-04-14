@@ -119,18 +119,18 @@ No artifact advances to the next phase until it reaches `approved`. The implemen
 
 ### Phase 1 -- Feature Spec + Impact Analysis
 
-**Trigger:** An approved PDR exists and the human wants to generate the FS.
+**Trigger:** An approved PRD exists and the human wants to generate the FS.
 
-**Skill:** `sdd-feature-spec` — generates IA + FS in a single pass.
+**Skill:** `spec` — generates IA + FS in a single pass.
 
 **Flow:**
 
 ```
-IF PDR has unresolved open questions or critical ambiguities:
+IF PRD has unresolved open questions or critical ambiguities:
   → Resolve interactively (present options with recommendations, human chooses)
   → Then generate IA + FS autonomously
 
-IF PDR is clear and all questions resolved:
+IF PRD is clear and all questions resolved:
   → Generate IA + FS autonomously (no interactive steps)
 ```
 
@@ -148,10 +148,10 @@ IF the FS declares depends_on:
 
 **Trigger:** Human approves the FS and IA.
 
-**Skill:** `sdd-plan` — runs a pre-flight check, then generates TS + WPs.
+**Skill:** `plan` — runs a pre-flight check, then generates TS + WPs.
 
 **Pre-flight check** validates before any generation:
-- PDR, IA, and FS are all approved in `status.yaml`
+- PRD, IA, and FS are all approved in `status.yaml`
 - No unresolved `[BLOCKS APPROVAL]` open questions in the FS
 - Every service in the IA has at least one AC in the FS
 - ACs are consistent with resolved open questions and assumptions
@@ -166,7 +166,7 @@ The human reviews all artifacts together at the end. After approval, `status.yam
 
 **Trigger:** Human approves the Work Packages.
 
-**Skill:** `sdd-implement` — executes WPs in workspace repos. Runs pre-flight gate, determines execution order, implements each WP, and tracks progress via `status.yaml`. Runs parallel sub-agents for independent WPs targeting different workspaces when appropriate.
+**Skill:** `implement` — executes WPs in workspace repos. Runs pre-flight gate, determines execution order, implements each WP, and tracks progress via `status.yaml`. Runs parallel sub-agents for independent WPs targeting different workspaces when appropriate.
 
 **Interaction model:** Low-interaction. The WP is the approved spec — the agent executes it autonomously. Stops only for: pre-flight failure, contract conflicts, 3 failed fix attempts, or genuinely unresolvable ambiguity.
 
@@ -180,7 +180,7 @@ The human reviews all artifacts together at the end. After approval, `status.yam
 - Contracts are read-only. On conflict: STOP, block, recommend (what's wrong, additive vs breaking, consumers affected, suggested fix).
 - 3 consecutive failed fix attempts → revert, block, report. Do not keep cycling.
 
-See `.claude/skills/sdd-implement/SKILL.md` for the full procedure, and `.claude/skills/sdd-implement/references/` for implementation guides, checkpoint taxonomy, and resume protocol.
+See `.claude/skills/implement/SKILL.md` for the full procedure, and `.claude/skills/implement/references/` for implementation guides, checkpoint taxonomy, and resume protocol.
 
 ---
 

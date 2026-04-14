@@ -1,6 +1,6 @@
 # Backend Implementation Guide (Python / FastAPI)
 
-Reference for the sdd-implement skill when executing backend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
+Reference for the implement-v2 skill when executing backend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
 
 Load this file when the target workspace has `type: backend` in `registry/routes.yaml`.
 

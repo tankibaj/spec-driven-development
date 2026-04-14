@@ -1,6 +1,6 @@
 # Phase 2: Test Spec Generation
 
-This procedure is part of the `sdd-plan` skill. Follow these steps after Step 1 (Setup) is complete and the FS is loaded.
+This procedure is part of the `plan` skill. Follow these steps after Step 1 (Setup) is complete and the FS is loaded.
 
 > **Remember:** Every scenario has Preconditions/Action/Expected — no exceptions. Each traces to exactly one AC. After each happy path, write failure scenarios. Never combine ACs into one scenario. Cross-service scenarios validate the contract boundary.
 

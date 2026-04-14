@@ -54,7 +54,7 @@ Use one of these standardized patterns for the `Testable:` line:
 # FS-XXX: {Feature Title}
 
 **Feature folder:** `Story-XXXX-{slug}`
-**Feature Concept:** PDR — {concept name}
+**Feature Concept:** PRD — {concept name}
 **Status:** Draft
 **Author:** {name or team}
 **Last updated:** YYYY-MM-DD
@@ -67,7 +67,7 @@ Use one of these standardized patterns for the `Testable:` line:
 
 <!-- What does this feature do, why does it matter, and who benefits?
      Name the primary persona from plan/reference/personas.md.
-     Should trace directly to the PDR's WHAT and WHO. -->
+     Should trace directly to the PRD's WHAT and WHO. -->
 
 {What this feature delivers and the business outcome it drives.}
 
@@ -78,7 +78,7 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Background
 
 <!-- Business context, data, motivation. Why now? What problem exists today?
-     Should trace to the PDR's WHY. -->
+     Should trace to the PRD's WHY. -->
 
 {Context that helps the reader understand why this feature exists.}
 
@@ -99,7 +99,7 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Assumptions
 
 <!-- Things the spec takes for granted. If any assumption is wrong, the spec changes.
-     Seed from PDR assumptions + impact analysis findings. -->
+     Seed from PRD assumptions + impact analysis findings. -->
 
 - {Assumption 1}
 - {Assumption 2}
@@ -148,7 +148,7 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Open Questions
 
 <!-- Unresolved items that need answers before the FS can be approved.
-     sdd-plan will not advance to Phase 2 while [BLOCKS APPROVAL] questions remain.
+      plan will not advance to Phase 2 while [BLOCKS APPROVAL] questions remain.
      Remove this section entirely when the FS moves to Approved status. -->
 
 <!-- Each question includes options with the agent's recommendation so the

@@ -1,5 +1,5 @@
 ---
-name: sdd-plan
+name: plan
 description: Generates Test Spec and Work Packages from an approved Feature Spec. Use after FS is approved, covers Phase 2 (TS) and Phase 3 (WPs) in sequence.
 argument-hint: "[story-id] [slug]"
 allowed-tools: Read Glob
@@ -21,7 +21,7 @@ The TS ensures every AC is testable. The WPs ensure every test scenario is imple
 
 **Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`plan/spec/Story-XXXX/`).
 
-**When NOT to use:** Before FS approval (use `/sdd-feature-spec`), during implementation (Phase 4), for drafting the FS itself.
+**When NOT to use:** Before FS approval (use `/spec`), during implementation (Phase 4), for drafting the FS itself.
 
 ## Standing Instructions
 
@@ -130,7 +130,7 @@ Validate the IA and FS before generating anything. Run every check below. Collec
 
 | Check | How | Fail Action |
 |---|---|---|
-| PDR is approved | `status.yaml` `artifacts.PDR-XXX.status == approved` | BLOCK |
+| PRD is approved | `status.yaml` `artifacts.PRD-XXX.status == approved` | BLOCK |
 | IA is approved | `status.yaml` `artifacts.IA-XXX.status == approved` | BLOCK |
 | FS is approved | `status.yaml` `artifacts.FS-XXX.status == approved` | BLOCK |
 
@@ -156,7 +156,7 @@ Validate the IA and FS before generating anything. Run every check below. Collec
 |---|---|---|
 | Every AC has a Testable: line | Scan all AC-XXX entries | BLOCK — untestable AC |
 | ACs reference existing or flagged contracts | Check each endpoint/entity reference against `contracts/` | WARN — may indicate missing contract |
-| Resolved open questions reflected in ACs | If PDR open questions were resolved, verify ACs are consistent with those decisions | WARN |
+| Resolved open questions reflected in ACs | If PRD open questions were resolved, verify ACs are consistent with those decisions | WARN |
 | No vague ACs | ACs use behavioral language with concrete conditions | WARN |
 
 #### Dependency Check (if FS has `depends_on`)
@@ -239,7 +239,7 @@ IF FE depends on new endpoints being built in this feature:
 ```yaml
 current_phase: 3
 artifacts:
-  PDR-XXX: { status: approved }
+  PRD-XXX: { status: approved }
   IA-XXX: { status: approved }
   FS-XXX: { status: approved }
   TS-XXX: { status: awaiting_review, date: YYYY-MM-DD }
@@ -279,7 +279,7 @@ The Phase 4 implementation agent MUST verify before starting any WP:
 
 1. `current_phase` is `4`
 2. The WP's status under `artifacts` is `approved`
-3. All prerequisite artifacts are `approved`: PDR, IA, FS, TS
+3. All prerequisite artifacts are `approved`: PRD, IA, FS, TS
 4. If the WP has dependencies on other WPs (e.g., FE depends on BE), the dependency WP's `phase_4` status is `done`
 
 If any check fails, the agent reports what is missing and does not proceed.

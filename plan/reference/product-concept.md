@@ -104,7 +104,7 @@ See `plan/reference/roles.md` for the full role hierarchy.
 
 | Priority | Feature | Story ID | Status |
 |----------|---------|----------|--------|
-| 1 | **MVP Guest Shopping Experience** | **story-0001** | **PDR draft — entering Phase 1** |
+| 1 | **MVP Guest Shopping Experience** | **story-0001** | **PRD draft — entering Phase 1** |
 | 2 | Customer Registration & Accounts | TBD | Not started |
 | 3 | Order Management Dashboard (full) | TBD | Not started |
 

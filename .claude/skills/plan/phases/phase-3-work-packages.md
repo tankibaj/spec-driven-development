@@ -1,6 +1,6 @@
 # Phase 3: Work Package Generation
 
-This procedure is part of the `sdd-plan` skill. Follow these steps after Phase 2 (Test Spec) is complete.
+This procedure is part of the `plan` skill. Follow these steps after Phase 2 (Test Spec) is complete.
 
 > **Remember:** Copy ACs and TS scenarios VERBATIM — never paraphrase or reference by ID. Max 3 ACs per WP. One workspace per WP. Include contract excerpts directly — the implementation agent reads only the WP. State dependency order explicitly.
 
