@@ -92,7 +92,7 @@ These are the product pillars. Each pillar maps to one or more services.
 
 ## Tenancy Model
 
-See `plan/reference/roles.md` for the full role hierarchy.
+See `reference/roles.md` for the full role hierarchy.
 
 - Each **Tenant** is an independent merchant with isolated data.
 - Data isolation is enforced at every layer: DB row-level, API auth, service boundaries.

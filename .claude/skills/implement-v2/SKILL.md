@@ -41,10 +41,10 @@ Pre-flight is the gate. If it fails, no delegation happens.
 
 ### Step 1: Setup
 
-If arguments provided: `$0` = story-ID, `$1` = slug. Otherwise, list folders in `plan/spec/` and identify the feature with `current_phase: 4`.
+If arguments provided: `$0` = story-ID, `$1` = slug. Otherwise, list folders in `spec/` and identify the feature with `current_phase: 4`.
 
 Steps:
-1. Navigate to the feature folder under `plan/spec/`
+1. Navigate to the feature folder under `spec/`
 2. Read `status.yaml` — verify `current_phase` is `4`
 3. Read ALL WP files in the feature folder (for planning and pre-flight — not for implementation)
 4. Load `registry/routes.yaml` — map each WP to its target workspace
@@ -146,7 +146,7 @@ You are an executor implementing a single Work Package. Read and follow the exec
 2. .claude/skills/implement-v2/references/{be-guide.md OR fe-guide.md}
    — Checkpoint procedures for {backend OR frontend} workspaces.
 
-3. plan/spec/{feature-folder}/{WP-ID}.md
+3. spec/{feature-folder}/{WP-ID}.md
    — The Work Package. This is your specification.
 
 {IF resuming — include this line:}
@@ -157,7 +157,7 @@ You are an executor implementing a single Work Package. Read and follow the exec
 
 - Workspace path: workspaces/{workspace-id}
 - Workspace type: {backend OR frontend}
-- Status file: plan/spec/{feature-folder}/status.yaml
+- Status file: spec/{feature-folder}/status.yaml
 - Your status entry: phase_4.{WP-ID}
 - Mode: {Fresh start OR Resume from: {last_checkpoint}}
 
@@ -165,7 +165,7 @@ You are an executor implementing a single Work Package. Read and follow the exec
 
 - Do NOT read other WP files.
 - Do NOT read the FS or TS directly — use the verbatim copies in your WP.
-- Do NOT modify files in contracts/ or plan/ (except status.yaml checkpoints).
+- Do NOT modify files in contracts/, spec/, or reference/ (except status.yaml checkpoints).
 - Write ONLY your own phase_4.{WP-ID} entry in status.yaml.
 ```
 

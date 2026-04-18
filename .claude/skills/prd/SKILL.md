@@ -46,7 +46,7 @@ FEATURE CONCEPT: [Name]
 
 WHAT:       [capability from the user's perspective — not implementation]
 WHY:        [business justification — problem, opportunity, or risk]
-WHO:        [persona from plan/reference/personas.md]
+WHO:        [persona from reference/personas.md]
 SUCCESS:    [measurable outcome — business metric, not test case]
 UX/UI:      [needed / not needed — with reasoning]
 DEPENDS ON: [existing features or "none"]
@@ -63,10 +63,10 @@ Use full template from `${CLAUDE_SKILL_DIR}/assets/feature-concept-template.md` 
 
 Gather project context to ground the concept:
 
-- Read `plan/reference/glossary.md`, `personas.md`, `roles.md`
+- Read `reference/glossary.md`, `personas.md`, `roles.md`
 - Read `registry/routes.yaml` for the service landscape
 - Scan `contracts/` for existing APIs and data schemas
-- Check `plan/spec/` for related features (depends_on, blocks)
+- Check `spec/` for related features (depends_on, blocks)
 
 Surface assumptions explicitly:
 
@@ -110,8 +110,8 @@ Wait for human approval.
 After approval:
 
 1. Ask the user for the Story-ID and slug (e.g., `Story-0003-user-notifications`)
-2. Check `plan/spec/` for existing folders to avoid ID collisions
-3. Create the feature folder under `plan/spec/`
+2. Check `spec/` for existing folders to avoid ID collisions
+3. Create the feature folder under `spec/`
 4. Write the Feature Concept file to the folder
 5. Create `status.yaml`:
 
@@ -128,7 +128,7 @@ notes: ~
 6. Tell the user:
 
 ```
-Feature Concept approved and saved to plan/spec/Story-XXXX-slug/.
+Feature Concept approved and saved to spec/Story-XXXX-slug/.
 Ready to write the Feature Spec with /spec [story-id] [slug]
 ```
 
@@ -157,10 +157,10 @@ Before presenting to the human:
 
 - [ ] WHAT describes a user capability, not implementation
 - [ ] WHY states a business justification
-- [ ] WHO names a persona from `plan/reference/personas.md`
+- [ ] WHO names a persona from `reference/personas.md`
 - [ ] SUCCESS is a measurable business outcome
 - [ ] UX/UI decision is explicit with reasoning
-- [ ] DEPENDS ON / BLOCKS checked against existing `plan/spec/` features
+- [ ] DEPENDS ON / BLOCKS checked against existing `spec/` features
 - [ ] Assumptions are listed and confirmed by human
 - [ ] Scope check completed (one feature or split)
-- [ ] Domain terminology matches `plan/reference/glossary.md`
+- [ ] Domain terminology matches `reference/glossary.md`

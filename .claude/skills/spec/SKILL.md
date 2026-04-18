@@ -20,7 +20,7 @@ The FS is the contract between the Product Owner and the implementation agent. E
 - When ready to define acceptance criteria for a feature
 - When the UX/UI design (if required by PRD) is complete
 
-**Requires:** An approved PRD in the feature folder (`plan/spec/Story-XXXX/`).
+**Requires:** An approved PRD in the feature folder (`spec/Story-XXXX/`).
 
 **When NOT to use:** Before concept approval (use `/prd`), during implementation, for PRD writing.
 
@@ -77,16 +77,16 @@ Two steps interactive (at most). One step autonomous. One human review gate.
 ### Step 1: Setup and PRD Assessment
 
 If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
-1. List existing folders in `plan/spec/` and offer them if any match the context
+1. List existing folders in `spec/` and offer them if any match the context
 2. Ask the human: "Which feature folder? e.g., Story-0002-payment-flow"
 
-**Output location:** `plan/spec/{$0}-{$1}/` — all artifacts (FS, IA) are saved to this folder.
+**Output location:** `spec/{$0}-{$1}/` — all artifacts (FS, IA) are saved to this folder.
 
 Steps:
 1. Navigate to the feature folder (create it if it doesn't exist)
 2. Verify PRD exists and status is approved in `status.yaml`
 3. Load domain context:
-   - `plan/reference/glossary.md`, `personas.md`, `roles.md`
+   - `reference/glossary.md`, `personas.md`, `roles.md`
 4. Load all skill reference files:
    - `${CLAUDE_SKILL_DIR}/template.md` — FS structure and Testable: line formats
    - `${CLAUDE_SKILL_DIR}/assets/impact-analysis-template.md` — IA document format
@@ -157,7 +157,7 @@ If breaking changes are identified:
 
 Generate the complete FS using the template structure (loaded in Step 1):
 
-**Goal** — Pull from PRD's WHAT and WHO. Name the primary persona from `plan/reference/personas.md`.
+**Goal** — Pull from PRD's WHAT and WHO. Name the primary persona from `reference/personas.md`.
 
 **Background** — Pull from PRD's WHY. Add business context.
 
@@ -184,7 +184,7 @@ Generate the complete FS using the template structure (loaded in Step 1):
    - Impact analysis — every affected service should have ≥1 AC
    - `contracts/api/` — do referenced endpoints exist?
    - `contracts/data-schema/` — do referenced entities exist?
-   - `plan/reference/glossary.md` — is domain terminology correct?
+   - `reference/glossary.md` — is domain terminology correct?
 
 4. Flag missing contracts as "(to be created — see Contract Review)".
 
@@ -249,7 +249,7 @@ Run before writing files. Every item must pass.
 - [ ] Approved PRD was loaded and referenced
 - [ ] Impact analysis completed — all affected services identified
 - [ ] Header block complete (folder, status, author, date, depends on, blocks)
-- [ ] Goal names a persona from `plan/reference/personas.md`
+- [ ] Goal names a persona from `reference/personas.md`
 - [ ] Every AC has a unique `AC-XXX` ID and descriptive title
 - [ ] Every AC has a `Testable:` line with concrete verification
 - [ ] `Testable:` lines use standardized format (API / UI / System)
@@ -258,7 +258,7 @@ Run before writing files. Every item must pass.
 - [ ] ACs cross-checked against `contracts/api/` and `contracts/data-schema/`
 - [ ] Missing contracts flagged as "to be created"
 - [ ] Breaking changes flagged with ADR recommendation
-- [ ] Domain terminology matches `plan/reference/glossary.md`
+- [ ] Domain terminology matches `reference/glossary.md`
 - [ ] Out of Scope section is present and non-empty
 - [ ] Open questions captured with options and recommendations (blocks approval if `[BLOCKS APPROVAL]`)
 - [ ] Contract review summary included in Related Contracts

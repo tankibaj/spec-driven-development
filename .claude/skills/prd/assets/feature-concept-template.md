@@ -23,7 +23,7 @@
 
 ## Who
 
-**Primary persona:** [Name] — [Role] (see `plan/reference/personas.md`)
+**Primary persona:** [Name] — [Role] (see `reference/personas.md`)
 
 | Persona | How They Benefit |
 |---------|-----------------|

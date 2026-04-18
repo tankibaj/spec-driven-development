@@ -1,42 +1,47 @@
-# CLAUDE.md -- Agent Instructions
+# CLAUDE.md — Agent Instructions
 
-You are the SDD (Spec Driven Development) agent operating in the **Specification Hub**.
-This file is your entry point. Read it in full at the start of every session.
+You are the Spec-Driven Development (SDD) agent and this file is your entry point.
+Read it in full at the start of every session.
 
 ---
 
-## 1. Identity and Core Constraints
+## 1. Repository Overview
 
-This repository is a Specification Hub. It stores specifications, contracts, and routing configuration. Code belongs in workspaces/, not in the root.
+This repository has two parts:
 
-The `workspaces/` directory is part of this repo. Each service or app inside it is a **separate git submodule** pointing to its own implementation repository. Code is written there, not here.
+- **Specification Hub** (root) — feature specs, contracts, domain reference, and routing
+  configuration for the SDD workflow. No production code lives here.
+- **Workspaces** (`workspaces/`) — a polyrepo of git submodules, each pointing to its own
+  implementation repository. All production code is written here.
 
-### Hard Rules
+---
 
-- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) file without explicit human approval. The human creates the FS using skills and owns the final version. You **SHOULD** help the human draft or improve acceptance criteria when they are missing, ambiguous, or untestable. Present proposed changes for review — the human decides what goes into the FS.
-- You **MUST NOT** write production code inside the spec hub root. Code belongs in workspace submodules only (`workspaces/<service>/`).
-- You **MUST** ensure every acceptance criterion (AC) in a Feature Spec maps to at least one test scenario in the Test Spec. No gaps.
-- You **MUST** ensure every test scenario in the Test Spec traces back to an AC. No orphan scenarios.
-- You **MUST** make every Work Package self-contained. An implementer reads only that WP. If they would need to read another WP, the FS, or surrounding context to complete it, the WP is incomplete.
-- You **MUST** load domain context (`plan/reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
-- You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create new contracts or update existing ones when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR explaining the change. All contract changes require human review.
-- You **MUST** use the correct ID conventions (see Section 7) when creating files. Check existing IDs in the feature folder to avoid collisions.
+## 2. Hard Rules
+
+- You **MUST NOT** modify any Feature Spec (`FS-XXX.md`) without explicit human approval. You **SHOULD** help draft or improve acceptance criteria — present proposed changes for review.
+- You **MUST NOT** write production code outside workspace submodules (`workspaces/<service>/`).
+- You **MUST** ensure every AC maps to at least one test scenario. No gaps.
+- You **MUST** ensure every test scenario traces back to an AC. No orphan scenarios.
+- You **MUST** make every Work Package self-contained. An implementer reads only that WP — if they would need another WP, the FS, or surrounding context to complete it, the WP is incomplete.
+- You **MUST** load domain context (`reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
+- You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create or update contracts when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR first. All contract changes require human review.
+- You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human.
+- You **MUST** use correct ID conventions (see Section 7) and check existing IDs to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
-- You **MUST NOT** write to a workspace that another agent is actively implementing in. One agent per workspace at a time. If in doubt, check `status.yaml` — a `phase_4` status of `in_progress` means that workspace is locked.
-- You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human. Do not modify contracts unilaterally.
-- You **SHOULD** prefer running multiple agents in parallel when features are independent and contracts are stable — one agent per workspace. Parallelism is the default preference; sequential is the fallback.
+- You **MUST NOT** write to a workspace another agent is actively implementing in. One agent per workspace at a time. Check `status.yaml` — `phase_4: in_progress` means locked.
+- You **SHOULD** prefer running multiple agents in parallel when features are independent and contracts are stable.
 
 ---
 
-## 2. Context Loading Strategy
+## 3. Context Loading Strategy
 
-Load only what you need, when you need it. Do not pre-load reference documents speculatively.
+Load only what you need, when you need it. Do not pre-load speculatively.
 
 ### Always load at session start
 
 - `CLAUDE.md` (this file)
 - `CLAUDE.learnings.md`
-- `registry/project.yaml` — project domain, tech stack, standards
+- `registry/project.yaml`
 - All files in `.claude/rules/`
 
 ### Load when entering Phase 4
@@ -47,64 +52,28 @@ Load only what you need, when you need it. Do not pre-load reference documents s
 
 ---
 
-## 3. Operating Modes
-
-Switch modes using slash commands: `/collaborate` or `/autopilot`.
-
-### /collaborate (default -- all phases)
-
-You are a senior architect and development partner. For every non-trivial decision:
-
-1. Present options (minimum 2 where applicable).
-2. State your recommendation and explain why.
-3. Wait for the human to choose before proceeding.
-
-Ask clarifying questions proactively. Challenge assumptions when you see risks. Explain tradeoffs.
-
-### /autopilot (Phase 4 only)
-
-You execute the approved Work Package autonomously. Pick the best solution based on available context and implement it. ONLY stop to ask the human when:
-
-- Required information is missing and cannot be inferred.
-- You encounter a blocking contradiction in the spec or contracts.
-- The decision would be irreversible or high-risk.
-
-If `/autopilot` is invoked outside Phase 4, respond:
-
-> "Autopilot is available during Phase 4 (implementation) only. Continuing in Collaborate mode."
-
-Both modes are subject to all constraints in Section 1. Review gates (human approves TS, human approves WPs) apply regardless of mode.
-
----
-
 ## 4. Repository Map
 
 | Path | Contains |
 |---|---|
-| `plan/spec/` | Feature specs, test specs, work packages -- one folder per feature |
-| `plan/spec/{feature}/status.yaml` | Per-feature progress file — current phase, artifact approval states, Phase 4 checkpoints, blockers |
-| `plan/reference/glossary.md` | Product glossary -- domain terminology |
-| `plan/reference/personas.md` | User personas |
-| `plan/reference/roles.md` | System roles and tenancy model |
-| `contracts/api/` | OpenAPI specs, one per microservice |
-| `contracts/architecture/` | ADRs, patterns, system design |
-| `contracts/architecture/workspace-bootstrap.md` | Toolchain, Dockerfile, CI, and project structure standard for every workspace |
-| `contracts/architecture/contract-validation.md` | Schemathesis, Pact, and MSW standards for API contract testing |
-| `contracts/architecture/observability-standards.md` | Health endpoints, Prometheus metrics, structured logging (Loki), and tracing standards |
-| `.claude/rules/branching-strategy.md` | Branch naming, commit conventions, merge strategy — agent auto-creates branches |
+| `spec/` | Feature specs, test specs, work packages — one folder per feature |
+| `spec/{feature}/status.yaml` | Per-feature progress: current phase, artifact states, Phase 4 checkpoints, blockers |
+| `reference/` | Domain context: glossary, personas, roles |
+| `contracts/api/` | OpenAPI specs — one per microservice |
 | `contracts/data-schema/` | Entity definitions, migrations |
-| `registry/project.yaml` | Project metadata -- domain, methodology, standards |
-| `registry/routes.yaml` | All workspaces (services + apps) — keyed by id for direct lookup |
-| `.claude/rules/` | Agent guardrails — enforced on every session |
-| `.claude/skills/` | Reusable agent skill definitions |
-| `workspaces/` | Git submodules -- each child is a separate implementation repo |
-| `CLAUDE.learnings.md` | Institutional memory -- read at session start, append new learnings |
+| `contracts/architecture/` | ADRs, bootstrap standard, observability standard, contract validation standard |
+| `registry/project.yaml` | Project metadata: domain, methodology, tech stack |
+| `registry/routes.yaml` | All workspaces keyed by id |
+| `.claude/rules/` | Agent guardrails — enforced every session |
+| `.claude/skills/` | Reusable skill definitions |
+| `workspaces/` | Git submodules — each child is a separate implementation repo |
+| `CLAUDE.learnings.md` | Institutional memory — read at session start, append new learnings |
 
 ---
 
 ## 5. Workflow Phases
 
-Every feature follows phases 1 through 4. You may enter at any phase depending on what already exists (see Section 8: Session Resumption).
+Every feature follows phases 1 through 4. Enter at any phase depending on what exists (see Section 8).
 
 ### Artifact Lifecycle
 
@@ -112,90 +81,54 @@ All spec artifacts follow this lifecycle, tracked in `status.yaml`:
 
 ```
 draft → awaiting_review → approved
-                        → rejected (human provides feedback, agent revises, returns to awaiting_review)
+                        → rejected → revised → awaiting_review
 ```
 
-No artifact advances to the next phase until it reaches `approved`. The implementation agent verifies all prerequisites are `approved` before starting Phase 4.
+No artifact advances until it reaches `approved`.
 
-### Phase 1 -- Feature Spec + Impact Analysis
+### Phase 1 — Feature Spec + Impact Analysis
 
-**Trigger:** An approved PRD exists and the human wants to generate the FS.
-
+**Trigger:** An approved PRD exists.
 **Skill:** `spec` — generates IA + FS in a single pass.
 
-**Flow:**
+- If the PRD has unresolved questions or ambiguities → resolve interactively, then generate.
+- If the PRD is clear → generate IA + FS autonomously.
+- The FS includes Assumptions and Open Questions sections (severity: `[BLOCKS APPROVAL]` / `[MINOR]`).
+- Human reviews both files directly. No interactive AC-by-AC approval.
+- If the FS declares `depends_on` → check dependency `status.yaml`. Done → proceed. In progress → FE can mock, flag to human. Missing → ask human.
 
-```
-IF PRD has unresolved open questions or critical ambiguities:
-  → Resolve interactively (present options with recommendations, human chooses)
-  → Then generate IA + FS autonomously
+### Phase 2 + 3 — Plan (Test Spec + Work Packages)
 
-IF PRD is clear and all questions resolved:
-  → Generate IA + FS autonomously (no interactive steps)
-```
+**Trigger:** Human approves FS and IA.
+**Skill:** `plan` — runs pre-flight validation, then generates TS + WPs.
 
-The skill writes both `IA-XXX.md` and `FS-XXX.md` as drafts. The FS includes an Assumptions section and an Open Questions section (with options and agent recommendations) for anything the agent could not resolve with confidence.
+Pre-flight validates: all prior artifacts approved, no `[BLOCKS APPROVAL]` open questions, AC coverage for every IA service, referenced contracts exist.
+If pre-flight fails → report issues, do not generate.
+If pre-flight passes → generate TS + WPs in one pass. Human reviews all artifacts together.
 
-**Human reviews both files directly.** No interactive AC-by-AC approval. The human updates `status.yaml` to `approved` when satisfied.
-
-```
-IF the FS declares depends_on:
-  → Check dependency status.yaml. Dependencies done → proceed.
-    In progress → FE can mock, flag to human. Missing → ask human.
-```
-
-### Phase 2 + 3 -- Plan (Test Spec + Work Packages)
-
-**Trigger:** Human approves the FS and IA.
-
-**Skill:** `plan` — runs a pre-flight check, then generates TS + WPs.
-
-**Pre-flight check** validates before any generation:
-- PRD, IA, and FS are all approved in `status.yaml`
-- No unresolved `[BLOCKS APPROVAL]` open questions in the FS
-- Every service in the IA has at least one AC in the FS
-- ACs are consistent with resolved open questions and assumptions
-- All referenced contracts exist or are flagged for creation
-
-If pre-flight fails: report issues, do not generate. The human fixes the FS/IA first.
-If pre-flight passes: generate TS + WPs autonomously in one pass.
-
-The human reviews all artifacts together at the end. After approval, `status.yaml` is updated: TS and WPs set to `approved`, `current_phase` to `4`, and `phase_4` entries initialized to `not_started`.
-
-### Phase 4 -- Implement in Workspace
+### Phase 4 — Implement in Workspace
 
 **Trigger:** Human approves the Work Packages.
+**Skill:** `implement` — executes WPs in workspace repos.
 
-**Skill:** `implement` — executes WPs in workspace repos. Runs pre-flight gate, determines execution order, implements each WP, and tracks progress via `status.yaml`. Runs parallel sub-agents for independent WPs targeting different workspaces when appropriate.
+Low-interaction mode. The WP is the approved spec — execute it autonomously. The WP's Definition of Done is the only DoD; do not invent additional checks. Stop only for: pre-flight failure, contract conflicts, 3 consecutive failed fix attempts, or genuinely unresolvable ambiguity.
 
-**Interaction model:** Low-interaction. The WP is the approved spec — the agent executes it autonomously. Stops only for: pre-flight failure, contract conflicts, 3 failed fix attempts, or genuinely unresolvable ambiguity.
+If a workspace doesn't exist, create it as a git submodule. Implementation code is committed only to submodules, never to the spec hub.
 
-**Key behaviours:**
-- Pre-flight gate validates all artifact approvals, contract existence, workspace readiness, and cross-feature dependencies before any code is written.
-- Independent WPs targeting different workspaces may run in parallel — this is a judgment call, not forced.
-- The WP's Definition of Done is the only DoD. Do not invent additional checks.
-- Implementation precedence: WP Implementation Order → reference guide → agent judgment.
-- If a workspace doesn't exist, create it as a git submodule. Implementation code is committed only to submodules, never to the spec-hub.
-- Checkpoints follow a standard taxonomy (scaffold → models → routes → integration → tests → dod for BE; scaffold → state → components → integration → tests → dod for FE).
-- Contracts are read-only. On conflict: STOP, block, recommend (what's wrong, additive vs breaking, consumers affected, suggested fix).
-- 3 consecutive failed fix attempts → revert, block, report. Do not keep cycling.
-
-See `.claude/skills/implement/SKILL.md` for the full procedure, and `.claude/skills/implement/references/` for implementation guides, checkpoint taxonomy, and resume protocol.
+See `.claude/skills/implement/SKILL.md` for the full procedure and `.claude/skills/implement/references/` for implementation guides.
 
 ---
 
 ## 6. Contract Maintenance
 
-Creating and updating contracts is a normal part of the SDD workflow. When a feature requires new or changed interfaces, handle them as follows:
-
 | Situation | Action | Location |
 |---|---|---|
 | New API endpoint | Create or update the OpenAPI spec | `contracts/api/{service}.openapi.yaml` |
 | New data entity or migration | Create or update the schema | `contracts/data-schema/` |
-| Architectural decision needed | Propose an ADR using the next available `ADR-XXX` ID | `contracts/architecture/` |
-| Update that **contradicts** an existing contract | You **MUST** propose an ADR explaining the change before updating the contract | `contracts/architecture/` |
+| Architectural decision needed | Propose an ADR (next `ADR-XXX` ID) | `contracts/architecture/` |
+| Contradicting update | Propose an ADR **before** updating the contract | `contracts/architecture/` |
 
-All contract changes MUST be presented to the human for review before you proceed with Work Package generation or implementation that depends on them.
+All contract changes must be presented to the human for review before proceeding.
 
 ---
 
@@ -210,7 +143,7 @@ All contract changes MUST be presented to the human for review before you procee
 | Frontend Work Package | `WP-XXX-FE` | `WP-001-FE` |
 | Architecture Decision | `ADR-XXX` | `ADR-001` |
 
-Before creating any artifact, list existing files in the feature folder (for FS/TS/WP) or `contracts/architecture/` (for ADRs) and use the next sequential number. Do not reuse or skip IDs.
+Before creating any artifact, list existing files in the target folder and use the next sequential number.
 
 ---
 
@@ -218,49 +151,37 @@ Before creating any artifact, list existing files in the feature folder (for FS/
 
 At the start of every session:
 
-1. Read this file (`CLAUDE.md`).
-2. Read `CLAUDE.learnings.md` for institutional memory.
-3. Read `registry/project.yaml` for project domain, tech stack, and standards.
-4. Read all files in `.claude/rules/` — these guardrails are active for the entire session.
-5. If the human specifies a feature, navigate to its folder under `plan/spec/`.
-6. Check for `status.yaml` in the feature folder:
+1. Read `CLAUDE.md` (this file).
+2. Read `CLAUDE.learnings.md`.
+3. Read `registry/project.yaml`.
+4. Read all files in `.claude/rules/`.
+5. If the human specifies a feature, navigate to its folder under `spec/`.
+6. Check for `status.yaml`:
+   - **Exists:** Resume from the exact phase, step, and checkpoint recorded. Do not re-run completed steps.
+   - **Missing** — detect state from files present:
 
-```
-IF status.yaml exists:
-  → Read it. Resume from the exact phase, step, and checkpoint recorded.
-  → Do not re-run steps already marked complete or approved.
+     | Files present | Action |
+     |---|---|
+     | Nothing | Ask the human to author or draft an FS |
+     | FS only | Phase 1 — review FS, generate IA |
+     | FS + IA | Phase 2 — generate TS + WPs |
+     | FS + IA + TS | Phase 3 — generate WPs |
+     | FS + IA + TS + WPs | Phase 4 — implement |
 
-IF status.yaml does not exist (fallback — file-existence detection):
-  IF nothing exists            → Ask the human to author an FS, or help draft one
-                                 in /collaborate mode.
-  IF only FS exists            → Start at Phase 1 (review it, generate IA).
-  IF FS + IA exist             → Read both. Start at Phase 2 (generate TS + WPs).
-  IF FS + IA + TS exist        → Read all. Start at Phase 3 (generate WPs).
-  IF FS + IA + TS + WPs exist  → Read all. Start at Phase 4 (implement).
-  → Create status.yaml immediately to begin tracking state.
-```
+     Create `status.yaml` immediately to begin tracking.
 
-7. Confirm your assessment with the human before proceeding. Example:
-
-> "I found `status.yaml` for this feature. Current phase: 4. WP-001-BE is `in_progress`, last checkpoint: 'saga step 2 — reserve stock'. WP-001-FE is `not_started`. Operating in /collaborate mode. Resuming Phase 4 from the last checkpoint. Confirm?"
+7. Confirm your assessment with the human before proceeding.
 
 ---
 
 ## 9. Institutional Memory
 
-`CLAUDE.learnings.md` holds learnings accumulated across sessions. It is structured into three categories for efficient loading and scanning.
-
-### Categories
+`CLAUDE.learnings.md` holds learnings across sessions in three categories:
 
 | Category | What goes here |
 |---|---|
-| **Domain Rules** | Canonical facts about the domain, terminology decisions, invariants that never change |
-| **Human Preferences** | Decisions the human has made about process, style, or approach — always honour these |
-| **Technical Gotchas** | Implementation-level findings: edge cases, framework quirks, patterns that failed, non-obvious constraints |
+| **Domain Rules** | Canonical domain facts, terminology decisions, invariants |
+| **Human Preferences** | Process, style, or approach decisions — always honour these |
+| **Technical Gotchas** | Edge cases, framework quirks, patterns that failed |
 
-### Rules
-
-- **Read it** at the start of every session.
-- **Append to the correct category** when you discover something that future sessions should know (e.g., a domain term that was ambiguous, a routing pattern that was non-obvious, a contract quirk).
-- Keep entries concise: one line per learning, prefixed with the date.
-- Do not remove existing entries. Mark stale entries `[obsolete: reason]` if they no longer apply.
+**Rules:** Read at session start. Append to the correct category when you discover something future sessions should know. One line per learning, prefixed with the date. Never remove entries — mark stale ones `[obsolete: reason]`.

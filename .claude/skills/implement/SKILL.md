@@ -69,7 +69,7 @@ These apply at every step:
 Stop and reassess if you catch yourself doing any of these:
 
 - Implementing features not described in the WP
-- Modifying files in `contracts/` or `plan/`
+- Modifying files in `contracts/`, `spec/`, or `reference/` (except `status.yaml`)
 - Reading the FS or TS directly instead of the verbatim copies in the WP
 - Skipping TS scenarios because they seem redundant
 - Continuing past 3 failed fix attempts on the same issue
@@ -99,10 +99,10 @@ Pre-flight is the gate. If it fails, implementation does not start.
 
 ### Step 1: Setup
 
-If arguments provided: `$0` = story-ID, `$1` = slug. Otherwise, list folders in `plan/spec/` and identify the feature with `current_phase: 4`.
+If arguments provided: `$0` = story-ID, `$1` = slug. Otherwise, list folders in `spec/` and identify the feature with `current_phase: 4`.
 
 Steps:
-1. Navigate to the feature folder under `plan/spec/`
+1. Navigate to the feature folder under `spec/`
 2. Read `status.yaml` — verify `current_phase` is `4`
 3. Read ALL WP files in the feature folder
 4. Load `registry/routes.yaml` — map each WP to its target workspace
@@ -331,7 +331,7 @@ If you attempt to fix a failing test, type error, or linter error and fail **3 c
 ### Scope Enforcement
 
 - Do NOT add features, endpoints, or behaviors not in the WP.
-- Do NOT modify files in `plan/` or `contracts/` during implementation.
+- Do NOT modify files in `spec/`, `reference/`, or `contracts/` during implementation (except `status.yaml`).
 - Do NOT read the FS or TS directly — use the verbatim copies in the WP.
 - If you think something is missing from the WP, block and report. Do not fill the gap.
 
