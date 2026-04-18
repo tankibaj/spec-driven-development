@@ -22,8 +22,8 @@ So when you use AI coding tools, you hit a wall. You can get help inside one cod
    Already cloned without submodules? Run `git submodule init && git submodule update`.
 
 2. **Orient yourself:**
-   - `plan/spec/` — browse any feature folder to see a real spec, test scenarios, and work packages
-   - `plan/reference/` — product glossary, user personas, role definitions
+   - `spec/` — browse any feature folder to see a real spec, test scenarios, and work packages
+   - `reference/` — product glossary, user personas, role definitions
    - `contracts/` — API schemas, data models, architecture decisions
 
 **AI agents:** your entry point is `CLAUDE.md`, loaded automatically on every session.
@@ -83,16 +83,16 @@ AI agents execute the approved work packages. Each agent works inside a single w
 No guessing. No drift. Every line of code traces back to an approved spec.
 
 
-| Step | Owner | Reviewer | Skill |
-|---|---|---|---|
-| Feature Concept (PRD) | Human + AI agent | Human | `/prd` |
-| Feature Spec (FS) + Impact Analysis | Human + AI agent | Human | `/spec` |
-| Test Spec (TS) + Work Packages (WP) | AI agent | Human (reviews both together) | `/plan` |
-| Implementation | AI agent | Human (DoD checklist) | — |
+| Step                                | Owner            | Reviewer                      | Skill        |
+|-------------------------------------|------------------|-------------------------------|--------------|
+| Feature Concept (PRD)               | Human + AI agent | Human                         | `/prd`       |
+| Feature Spec (FS) + Impact Analysis | Human + AI agent | Human                         | `/spec`      |
+| Test Spec (TS) + Work Packages (WP) | AI agent         | Human (reviews both together) | `/plan`      |
+| Implementation                      | AI agent         | Human (DoD checklist)         | `/implement` |
 
 Humans define *what* to build. AI agents break it down into testable scenarios and implementable work packages. Humans review and approve via `status.yaml` before anything moves forward.
 
-To start a new feature: create a folder under `plan/spec/` named `{TICKET-ID}-{slug}` (e.g. `story-0002-user-registration`), then invoke the skills in order. Every artifact must reach `approved` status before the next phase begins.
+To start a new feature: create a folder under `spec/` named `{TICKET-ID}-{slug}` (e.g. `story-0002-user-registration`), then invoke the skills in order. Every artifact must reach `approved` status before the next phase begins.
 
 ---
 
@@ -102,22 +102,22 @@ Skills are reusable workflows that guide the AI agent through each SDD phase. Yo
 
 ### SDD Workflow Skills
 
-| Skill | When to use | What it produces |
-|---|---|---|
-| `/prd` | Starting a new feature — define *what* and *why* before any spec work | `PRD-XXX.md` in the feature folder |
-| `/spec` | After the concept is approved — define acceptance criteria with impact analysis | `FS-XXX.md` + `IA-XXX.md` |
-| `/plan` | After the FS is approved — derive test scenarios and split into work packages | `TS-XXX.md` + `WP-XXX-BE.md` / `WP-XXX-FE.md` |
-| `/run-dod-checklist` | Before marking a WP as done — runs linters, type checks, tests, and contract validation | Pass/fail report |
+| Skill                | When to use                                                                             | What it produces                              |
+|----------------------|-----------------------------------------------------------------------------------------|-----------------------------------------------|
+| `/prd`               | Starting a new feature — define *what* and *why* before any spec work                   | `PRD-XXX.md` in the feature folder            |
+| `/spec`              | After the concept is approved — define acceptance criteria with impact analysis         | `FS-XXX.md` + `IA-XXX.md`                     |
+| `/plan`              | After the FS is approved — derive test scenarios and split into work packages           | `TS-XXX.md` + `WP-XXX-BE.md` / `WP-XXX-FE.md` |
+| `/run-dod-checklist` | Before marking a WP as done — runs linters, type checks, tests, and contract validation | Pass/fail report                              |
 
 ### Implementation Skills
 
 These are loaded automatically by the AI agent during Phase 4 when it needs them:
 
-| Skill | Purpose |
-|---|---|
-| `/add-fastapi-endpoint` | Add a new API route to a FastAPI backend workspace |
-| `/add-alembic-migration` | Add a database migration in a backend workspace |
-| `/add-react-feature` | Add a new feature module to a React frontend workspace |
+| Skill                    | Purpose                                                |
+|--------------------------|--------------------------------------------------------|
+| `/add-fastapi-endpoint`  | Add a new API route to a FastAPI backend workspace     |
+| `/add-alembic-migration` | Add a database migration in a backend workspace        |
+| `/add-react-feature`     | Add a new feature module to a React frontend workspace |
 
 ---
 
@@ -149,44 +149,44 @@ The `routes.yaml` entry is how the AI agent knows which workspace a Work Package
 
 ## Where Things Live
 
-| Directory | Purpose | When to look here |
-|---|---|---|
-| `plan/spec/` | Feature specs, test specs, work packages, and per-feature `status.yaml` | You are building or reviewing a feature |
-| `plan/reference/` | Glossary, personas, roles | You need domain context |
-| `contracts/` | OpenAPI specs, ADRs, data schemas | You need the technical interface between services |
-| `registry/` | `project.yaml` (project metadata) + `routes.yaml` (workspace routing) | You need to know which repo a work package targets |
-| `.claude/rules/` | Agent guardrails — loaded and enforced on every session | You want to understand or change agent behavior |
-| `.claude/skills/` | Reusable agent skill definitions (see "AI Skills" above) | You want to understand or modify a workflow |
-| `workspaces/` | Git submodules — each service/app is a separate repo | You are implementing a work package |
+| Directory         | Purpose                                                                 | When to look here                                  |
+|-------------------|-------------------------------------------------------------------------|----------------------------------------------------|
+| `spec/`           | Feature specs, test specs, work packages, and per-feature `status.yaml` | You are building or reviewing a feature            |
+| `reference/`      | Glossary, personas, roles                                               | You need domain context                            |
+| `contracts/`      | OpenAPI specs, ADRs, data schemas                                       | You need the technical interface between services  |
+| `registry/`       | `project.yaml` (project metadata) + `routes.yaml` (workspace routing)   | You need to know which repo a work package targets |
+| `.claude/rules/`  | Agent guardrails — loaded and enforced on every session                 | You want to understand or change agent behavior    |
+| `.claude/skills/` | Reusable agent skill definitions (see "AI Skills" above)                | You want to understand or modify a workflow        |
+| `workspaces/`     | Git submodules — each service/app is a separate repo                    | You are implementing a work package                |
 
 <details>
 <summary>Full directory tree</summary>
 
 ```
 spec-hub/
-├── registry/
-│   ├── project.yaml               # Project metadata — domain, methodology, standards
-│   └── routes.yaml                # Routes work packages to workspace repos
+├── spec/
+│   └── story-1234-{slug}/         # One folder per feature (ticket ID + slug)
+│       ├── PRD-XXX.md             # Feature Concept (Product Requirements Document)
+│       ├── FS-XXX.md              # Feature Spec
+│       ├── IA-XXX.md              # Impact Analysis
+│       ├── TS-XXX.md              # Test Spec
+│       ├── WP-XXX-BE.md           # Backend Work Package
+│       ├── WP-XXX-FE.md           # Frontend Work Package
+│       └── status.yaml            # Phase progress, artifact approval states, blockers
 │
-├── plan/
-│   ├── spec/
-│   │   └── story-1234-{slug}/     # One folder per feature (ticket ID + slug)
-│   │       ├── PRD-XXX.md         # Feature Concept (Product Requirements Document)
-│   │       ├── FS-XXX.md          # Feature Spec
-│   │       ├── IA-XXX.md          # Impact Analysis
-│   │       ├── TS-XXX.md          # Test Spec
-│   │       ├── WP-XXX-BE.md       # Backend Work Package
-│   │       ├── WP-XXX-FE.md       # Frontend Work Package
-│   │       └── status.yaml        # Phase progress, artifact approval states, blockers
-│   └── reference/
-│       ├── glossary.md
-│       ├── personas.md
-│       └── roles.md
+├── reference/
+│   ├── glossary.md
+│   ├── personas.md
+│   └── roles.md
 │
 ├── contracts/
 │   ├── api/                       # OpenAPI specs (one per microservice)
 │   ├── architecture/              # ADRs, patterns, system design
 │   └── data-schema/               # Entity definitions, migrations
+│
+├── registry/
+│   ├── project.yaml               # Project metadata — domain, methodology, standards
+│   └── routes.yaml                # Routes work packages to workspace repos
 │
 ├── .claude/
 │   ├── rules/                     # Agent guardrails (loaded every session)

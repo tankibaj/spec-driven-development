@@ -117,7 +117,7 @@ Run before presenting. Every item must pass.
 - [ ] Negative and edge-case scenarios included where ACs imply them
 - [ ] Cross-service scenarios validate contract boundaries (request shape, error handling, not-called assertions)
 - [ ] Observability scenarios present for each affected service
-- [ ] Domain terminology matches `plan/reference/glossary.md`
+- [ ] Domain terminology matches `reference/glossary.md`
 - [ ] Traceability matrix is complete and consistent with scenario list
 - [ ] Scenario IDs follow the pattern `TS-{number}-{sequence}` with no gaps or collisions
 - [ ] No scenarios test implementation details (internal function calls, DB queries) — only observable behavior

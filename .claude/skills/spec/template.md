@@ -66,12 +66,12 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Goal
 
 <!-- What does this feature do, why does it matter, and who benefits?
-     Name the primary persona from plan/reference/personas.md.
+     Name the primary persona from reference/personas.md.
      Should trace directly to the PRD's WHAT and WHO. -->
 
 {What this feature delivers and the business outcome it drives.}
 
-**Primary persona:** {Name} — {Role description} (see `plan/reference/personas.md`)
+**Primary persona:** {Name} — {Role description} (see `reference/personas.md`)
 
 ---
 

@@ -19,7 +19,7 @@ The TS ensures every AC is testable. The WPs ensure every test scenario is imple
 - After a Feature Spec (FS) and Impact Analysis (IA) have been approved
 - When ready to derive test scenarios and split work for implementation
 
-**Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`plan/spec/Story-XXXX/`).
+**Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`spec/Story-XXXX/`).
 
 **When NOT to use:** Before FS approval (use `/spec`), during implementation (Phase 4), for drafting the FS itself.
 
@@ -99,16 +99,16 @@ Pre-flight is the gate. If it fails, generation does not start.
 ### Step 1: Setup
 
 If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
-1. List existing folders in `plan/spec/` and offer them if any match the context
+1. List existing folders in `spec/` and offer them if any match the context
 2. Ask the human: "Which feature folder?"
 
-**Output location:** `plan/spec/{$0}-{$1}/` — all artifacts (TS, WPs) are saved to this folder.
+**Output location:** `spec/{$0}-{$1}/` — all artifacts (TS, WPs) are saved to this folder.
 
 Steps:
 1. Navigate to the feature folder
 2. Read `status.yaml`
 3. Read the FS and IA in full
-4. Load domain context: `plan/reference/glossary.md`, `personas.md`, `roles.md`
+4. Load domain context: `reference/glossary.md`, `personas.md`, `roles.md`
 5. Load all skill reference files:
    - `${CLAUDE_SKILL_DIR}/phases/phase-2-test-spec.md` — TS generation procedure
    - `${CLAUDE_SKILL_DIR}/phases/phase-3-work-packages.md` — WP generation procedure
