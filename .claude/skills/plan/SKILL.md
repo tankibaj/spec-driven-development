@@ -1,7 +1,7 @@
 ---
 name: plan
 description: Generates Test Spec and Work Packages from an approved Feature Spec. Use after FS is approved, covers Phase 2 (TS) and Phase 3 (WPs) in sequence.
-argument-hint: "[story-id] [slug]"
+argument-hint: "[feature-id] [slug]"
 allowed-tools: Read Glob
 disable-model-invocation: true
 ---
@@ -19,7 +19,7 @@ The TS ensures every AC is testable. The WPs ensure every test scenario is imple
 - After a Feature Spec (FS) and Impact Analysis (IA) have been approved
 - When ready to derive test scenarios and split work for implementation
 
-**Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`spec/Story-XXXX/`).
+**Requires:** Approved FS-XXX.md and IA-XXX.md in the feature folder (`spec/XXX-slug/`).
 
 **When NOT to use:** Before FS approval (use `/spec`), during implementation (Phase 4), for drafting the FS itself.
 
@@ -40,7 +40,7 @@ These apply at every step across both phases:
 - Copy ACs and TS scenarios VERBATIM into each WP — never paraphrase or reference by ID only.
 - Maximum 3 ACs per WP. One AC per WP is ideal.
 - Each WP targets exactly one workspace. Never mix backend and frontend.
-- Include contract excerpts directly in the WP. The implementation agent should not need to read `contracts/`.
+- Include contract excerpts directly in the WP. The implementation agent should not need to read the workspace `docs/` specs.
 - State dependency order explicitly between WPs.
 - Mark parallel opportunities where WPs have no dependencies.
 
@@ -98,7 +98,7 @@ Pre-flight is the gate. If it fails, generation does not start.
 
 ### Step 1: Setup
 
-If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
+If arguments provided: `$0` = feature-ID, `$1` = slug. Otherwise:
 1. List existing folders in `spec/` and offer them if any match the context
 2. Ask the human: "Which feature folder?"
 
@@ -108,7 +108,7 @@ Steps:
 1. Navigate to the feature folder
 2. Read `status.yaml`
 3. Read the FS and IA in full
-4. Load domain context: `reference/glossary.md`, `personas.md`, `roles.md`
+4. Load domain context: `docs/reference/glossary.md`, `personas.md`, `roles.md`
 5. Load all skill reference files:
    - `${CLAUDE_SKILL_DIR}/phases/phase-2-test-spec.md` — TS generation procedure
    - `${CLAUDE_SKILL_DIR}/phases/phase-3-work-packages.md` — WP generation procedure
@@ -116,8 +116,10 @@ Steps:
    - `${CLAUDE_SKILL_DIR}/templates/wp-be-template.md` — Backend WP structure
    - `${CLAUDE_SKILL_DIR}/templates/wp-fe-template.md` — Frontend WP structure
    - `${CLAUDE_SKILL_DIR}/references/splitting-guide.md` — AC-to-WP splitting criteria
-6. Load `registry/routes.yaml` — needed for workspace mapping
-7. Scan `contracts/api/` and `contracts/data-schema/` — needed for contract excerpts
+6. Load `routes.yaml` — needed for workspace mapping
+7. Read auto-generated specs from workspace `docs/` dirs (paths in `routes.yaml`) — needed for contract excerpts (read-only, never modify):
+     - `workspaces/{service}/docs/api/openapi.json` — OpenAPI specs
+     - `workspaces/{service}/docs/schema/entities.md` — entity schemas
 8. Check the feature folder for existing TS and WP IDs to avoid collisions
 
 ---
@@ -155,7 +157,7 @@ Validate the IA and FS before generating anything. Run every check below. Collec
 | Check | How | Fail Action |
 |---|---|---|
 | Every AC has a Testable: line | Scan all AC-XXX entries | BLOCK — untestable AC |
-| ACs reference existing or flagged contracts | Check each endpoint/entity reference against `contracts/` | WARN — may indicate missing contract |
+| ACs reference existing or flagged contracts | Check each endpoint/entity reference against workspace `docs/` specs | WARN — may indicate missing contract |
 | Resolved open questions reflected in ACs | If PRD open questions were resolved, verify ACs are consistent with those decisions | WARN |
 | No vague ACs | ACs use behavioral language with concrete conditions | WARN |
 
@@ -223,7 +225,7 @@ After completing Phase 3:
 ```
 IF contracts for all required endpoints exist and are stable:
   → PARALLEL: "WP-XXX-BE and WP-XXX-FE can run simultaneously.
-    FE uses Prism or MSW against contracts/api/{service}.openapi.yaml for mocking."
+    FE uses Prism or MSW against workspaces/{service}/docs/api/openapi.json for mocking."
 
 IF FE depends on new endpoints being built in this feature:
   → SEQUENTIAL: "WP-XXX-BE first. WP-XXX-FE second.

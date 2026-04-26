@@ -34,8 +34,8 @@ Use this structure when writing the `IA-XXX.md` file to the feature folder.
 
 # Impact Analysis: [Feature Name]
 
-**Feature:** `Story-XXXX-[slug]`
-**Feature Concept:** PRD — [concept name]
+**Feature:** `XXX-[slug]`
+**PRD:** PRD-XXX — [name]
 **Analyst:** [PO + Architect names]
 **Date:** YYYY-MM-DD
 
@@ -43,7 +43,7 @@ Use this structure when writing the `IA-XXX.md` file to the feature folder.
 
 ## Affected Services
 
-<!-- Read registry/routes.yaml. For each workspace, assess whether this feature
+<!-- Read routes.yaml. For each workspace, assess whether this feature
      requires changes to its API, data models, or cross-service interactions. -->
 
 | Service | Workspace | Impact | Change Type |

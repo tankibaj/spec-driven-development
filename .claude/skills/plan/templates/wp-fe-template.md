@@ -9,7 +9,7 @@ Structure for WP-XXX-FE.md documents. The implementation agent reads ONLY this f
 ```markdown
 # WP-XXX-FE: {Feature Title} — Frontend Work Package
 
-**Feature:** Story-XXXX-{slug}
+**Feature:** XXX-{slug}
 **Target workspace:** `workspaces/{app-id}`
 **Status:** awaiting_review
 **Generated:** YYYY-MM-DD
@@ -108,9 +108,9 @@ This WP is self-contained. An implementer should be able to complete it reading 
 
 {Link to the OpenAPI specs this WP mocks against during development and testing.}
 
-- `contracts/api/{service}.openapi.yaml` — {which operations are used}
+- `workspaces/{service}/docs/api/openapi.json` (auto-generated, read-only) — {which operations are used}
 
-**Mock strategy:** Use {Prism / MSW} against the OpenAPI spec above during development. Switch to the real backend URL once WP-XXX-BE is deployed.
+**Mock strategy:** Use {Prism / MSW} against the auto-generated OpenAPI spec above during development. Switch to the real backend URL once WP-XXX-BE is deployed.
 
 ---
 

@@ -58,7 +58,7 @@ Each scenario follows this structure:
 ```markdown
 # TS-XXX: {Feature Title} — Test Spec
 
-**Feature:** Story-XXXX-{slug}
+**Feature:** XXX-{slug}
 **Based on:** FS-XXX (all N ACs)
 **Generated:** YYYY-MM-DD
 **Status:** awaiting_review

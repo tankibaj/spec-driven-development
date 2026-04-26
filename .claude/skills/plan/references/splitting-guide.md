@@ -60,7 +60,7 @@ After splitting, determine the execution order:
 ```
 IF BE WP creates endpoints that FE WP consumes:
   → BE first, FE second
-  → FE WP note: "Mock against contracts/api/{service}.openapi.yaml
+  → FE WP note: "Mock against workspaces/{service}/docs/api/openapi.json
     until WP-XXX-BE is deployed. Then switch to real backend URL."
 
 IF multiple BE WPs are independent of each other:
