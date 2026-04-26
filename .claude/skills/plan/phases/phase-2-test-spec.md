@@ -59,7 +59,7 @@ For each external service call identified in the feature:
 
 These validate the **contract boundary**, not internal logic. They catch API shape mismatches before Phase 4.
 
-Reference `contracts/api/` (loaded in Step 1) for the exact request/response shapes the mocks should expect and return.
+Reference the auto-generated OpenAPI specs at `workspaces/{service}/docs/api/openapi.json` (loaded in Step 1) for the exact request/response shapes the mocks should expect and return.
 
 ---
 
@@ -71,7 +71,7 @@ For each service affected by this feature, add standard scenarios:
 - `GET /ready` → 200 when dependencies (DB, Redis, etc.) are available
 - `GET /metrics` → 200, Prometheus format (`Content-Type` contains `text/plain`)
 
-These are always present per `contracts/architecture/observability-standards.md`. Do not skip them.
+These are always present per `docs/architecture/observability-standards.md`. Do not skip them.
 
 ---
 
@@ -117,7 +117,7 @@ Run before presenting. Every item must pass.
 - [ ] Negative and edge-case scenarios included where ACs imply them
 - [ ] Cross-service scenarios validate contract boundaries (request shape, error handling, not-called assertions)
 - [ ] Observability scenarios present for each affected service
-- [ ] Domain terminology matches `reference/glossary.md`
+- [ ] Domain terminology matches `docs/reference/glossary.md`
 - [ ] Traceability matrix is complete and consistent with scenario list
 - [ ] Scenario IDs follow the pattern `TS-{number}-{sequence}` with no gaps or collisions
 - [ ] No scenarios test implementation details (internal function calls, DB queries) — only observable behavior

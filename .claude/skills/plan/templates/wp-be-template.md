@@ -9,7 +9,7 @@ Structure for WP-XXX-BE.md documents. The implementation agent reads ONLY this f
 ```markdown
 # WP-XXX-BE: {Feature Title} — Backend Work Package
 
-**Feature:** Story-XXXX-{slug}
+**Feature:** XXX-{slug}
 **Target workspace:** `workspaces/{service-id}`
 **Status:** awaiting_review
 **Generated:** YYYY-MM-DD
@@ -102,7 +102,7 @@ workspaces/{service-id}/
 {Saga/orchestration flow with numbered steps if applicable}
 {External HTTP client setup with configurable base URLs}
 {Test mocking pattern (e.g., respx for Python HTTP mocks)}
-{Any domain-specific patterns from contracts/architecture/}
+{Any domain-specific patterns from docs/architecture/}
 
 ### Key constraints
 {Learnings from CLAUDE.learnings.md relevant to this workspace}

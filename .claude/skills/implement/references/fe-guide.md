@@ -2,13 +2,13 @@
 
 Reference for the implement skill when executing frontend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
 
-Load this file when the target workspace has `type: frontend` in `registry/routes.yaml`.
+Load this file when the target workspace has `type: frontend` in `routes.yaml`.
 
 ---
 
 ## Project Structure
 
-Follow the structure from `contracts/architecture/workspace-bootstrap.md`. Key directories:
+Follow the structure from `docs/architecture/workspace-bootstrap.md`. Key directories:
 
 ```
 src/
@@ -54,7 +54,7 @@ These are fallback procedures. If the WP's Implementation Order specifies steps 
 5. Create `vite.config.ts` with test setup
 6. Create `Dockerfile` (multi-stage: build → nginx) and `nginx.conf`
 7. Create `.env.example` with API base URLs
-8. Generate OpenAPI types: `npx openapi-typescript ../../contracts/api/{service}.openapi.yaml -o src/api/types.ts`
+8. Generate OpenAPI types: `npx openapi-typescript docs/api/openapi.json -o src/api/types.ts`
 9. Create `src/main.tsx` and `src/App.tsx` with router shell
 10. Create `.github/workflows/ci.yml` per `workspace-bootstrap.md`
 11. **Verify:** `npm run dev` starts, page renders in browser
@@ -160,10 +160,16 @@ npm run dev
    import { server } from "../src/mocks/server";
    import "@testing-library/jest-dom";
 
-   beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-   afterEach(() => server.resetHandlers());
-   afterAll(() => server.close());
+   // When INTEGRATION=true, MSW is disabled — tests hit real backends.
+   // Used by `/implement --validate` to verify FE against deployed BE services.
+   if (!process.env.INTEGRATION) {
+     beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+     afterEach(() => server.resetHandlers());
+     afterAll(() => server.close());
+   }
    ```
+
+   **Integration mode:** When `INTEGRATION=true` is set (triggered by `/implement --validate`), MSW is not started. Tests run against real backend services via docker compose. The same test suite works in both modes — MSW mocks during development, real services during validation. Tests that use `server.use()` for error simulation will be flagged as mock-only during validation.
 2. Read the WP's "Test Scenarios" section — this is your test list
 3. Create test files in `tests/integration/` — one file per feature area or AC group
 4. Each TS scenario becomes one test function:
