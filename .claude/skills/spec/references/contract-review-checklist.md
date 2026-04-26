@@ -64,7 +64,7 @@ For each changed or new event:
 
 If a breaking change is unavoidable:
 
-- [ ] ADR proposed in `contracts/architecture/ADR-XXX.md`
+- [ ] ADR proposed in `docs/architecture/ADR-XXX.md`
 - [ ] All consumers identified (from impact analysis)
 - [ ] Consumer teams notified and have approved the change
 - [ ] Migration path documented (old shape → new shape)

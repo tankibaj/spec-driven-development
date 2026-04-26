@@ -23,9 +23,9 @@ This repository has two parts:
 - You **MUST** ensure every AC maps to at least one test scenario. No gaps.
 - You **MUST** ensure every test scenario traces back to an AC. No orphan scenarios.
 - You **MUST** make every Work Package self-contained. An implementer reads only that WP — if they would need another WP, the FS, or surrounding context to complete it, the WP is incomplete.
-- You **MUST** load domain context (`reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
-- You **MUST** check `contracts/` for existing API specs and data schemas before generating Work Packages. You **MAY** create or update contracts when the feature requires it. If an update **contradicts** an existing contract, you **MUST** propose an ADR first. All contract changes require human review.
-- You **MUST** treat `contracts/` as **read-only during Phase 4**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human.
+- You **MUST** load domain context (`docs/reference/glossary.md`, `personas.md`, `roles.md`) before generating any spec artifact. Use correct domain terminology.
+- You **MUST** check existing OpenAPI specs and entity schemas (auto-generated in each workspace's `docs/` directory — paths listed in `routes.yaml` `contracts` field) before generating Work Packages. These specs are **always read-only** — never create or modify them directly. If a contract change is needed, the service code changes and CI regenerates the spec. If a change **contradicts** an existing contract, you **MUST** propose an ADR first. All contract-affecting code changes require human review.
+- You **MUST** treat auto-generated OpenAPI specs and entity schemas as **always read-only**. If implementation reveals a required contract change, STOP, add it to `status.yaml` blockers, and raise it with the human.
 - You **MUST** use correct ID conventions (see Section 7) and check existing IDs to avoid collisions.
 - You **MUST** ask the human when intent is unclear. Do not assume.
 - You **MUST NOT** write to a workspace another agent is actively implementing in. One agent per workspace at a time. Check `status.yaml` — `phase_4: in_progress` means locked.
@@ -41,14 +41,15 @@ Load only what you need, when you need it. Do not pre-load speculatively.
 
 - `CLAUDE.md` (this file)
 - `CLAUDE.learnings.md`
-- `registry/project.yaml`
+- `docs/project.md`
 - All files in `.claude/rules/`
 
 ### Load when entering Phase 4
 
 - `status.yaml` for the active feature
 - The WP being implemented — read in full, this is your specification
-- `registry/routes.yaml` — confirm the target workspace
+- `routes.yaml` — confirm the target workspace
+- `workspaces/{workspace}/CLAUDE.md` — workspace context (tech stack, API surface, directory layout, dev commands). If missing, run `/workspace-context --workspace {name}` to generate it.
 
 ---
 
@@ -58,15 +59,18 @@ Load only what you need, when you need it. Do not pre-load speculatively.
 |---|---|
 | `spec/` | Feature specs, test specs, work packages — one folder per feature |
 | `spec/{feature}/status.yaml` | Per-feature progress: current phase, artifact states, Phase 4 checkpoints, blockers |
-| `reference/` | Domain context: glossary, personas, roles |
-| `contracts/api/` | OpenAPI specs — one per microservice |
-| `contracts/data-schema/` | Entity definitions, migrations |
-| `contracts/architecture/` | ADRs, bootstrap standard, observability standard, contract validation standard |
-| `registry/project.yaml` | Project metadata: domain, methodology, tech stack |
-| `registry/routes.yaml` | All workspaces keyed by id |
+| `docs/reference/` | Domain context: glossary, personas, roles |
+| `workspaces/{service}/docs/api/openapi.json` | Auto-generated OpenAPI specs — backend only (CI-generated, read-only). Path per service listed in `routes.yaml` `contracts` field |
+| `workspaces/{service}/docs/schema/entities.md` | Auto-generated entity definitions — backend only (CI-generated, read-only). Path per service listed in `routes.yaml` `contracts` field |
+| `workspaces/{app}/docs/routes.md` | Auto-generated route table — frontend only (CI-generated, read-only). Path per app listed in `routes.yaml` `contracts` field |
+| `workspaces/{app}/docs/consumed-endpoints.md` | Auto-generated consumed backend endpoints — frontend only (CI-generated, read-only). Path per app listed in `routes.yaml` `contracts` field |
+| `docs/architecture/` | ADRs, bootstrap standard, observability standard, contract validation standard |
+| `docs/project.md` | Project metadata: domain, methodology, tech stack |
+| `routes.yaml` | All workspaces keyed by id |
 | `.claude/rules/` | Agent guardrails — enforced every session |
 | `.claude/skills/` | Reusable skill definitions |
 | `workspaces/` | Git submodules — each child is a separate implementation repo |
+| `workspaces/{workspace}/CLAUDE.md` | Per-workspace context: tech stack, API surface, directory layout, dev commands. Generated by `/workspace-context` skill |
 | `CLAUDE.learnings.md` | Institutional memory — read at session start, append new learnings |
 
 ---
@@ -85,6 +89,14 @@ draft → awaiting_review → approved
 ```
 
 No artifact advances until it reaches `approved`.
+
+### Phase 0 — PRD (Product Requirements Document)
+
+**Trigger:** Human has a feature idea or business need.
+**Skill:** `prd` — defines WHAT to build, WHY, and for WHOM before any spec work begins.
+
+- Every artifact in the SDD chain (FS, TS, WPs) traces back to the PRD. If a Work Package can't trace to a business reason in the PRD, it shouldn't exist.
+- Human reviews and approves the PRD before specification work begins.
 
 ### Phase 1 — Feature Spec + Impact Analysis
 
@@ -123,12 +135,14 @@ See `.claude/skills/implement/SKILL.md` for the full procedure and `.claude/skil
 
 | Situation | Action | Location |
 |---|---|---|
-| New API endpoint | Create or update the OpenAPI spec | `contracts/api/{service}.openapi.yaml` |
-| New data entity or migration | Create or update the schema | `contracts/data-schema/` |
-| Architectural decision needed | Propose an ADR (next `ADR-XXX` ID) | `contracts/architecture/` |
-| Contradicting update | Propose an ADR **before** updating the contract | `contracts/architecture/` |
+| New API endpoint | Modify service code so CI regenerates the OpenAPI spec. **Never edit the spec directly.** Read the current spec from the workspace. | `workspaces/{service}/docs/api/openapi.json` (read-only, auto-generated) |
+| New data entity or migration | Modify service code so CI regenerates the entity schema. **Never edit the schema directly.** Read the current schema from the workspace. | `workspaces/{service}/docs/schema/entities.md` (read-only, auto-generated) |
+| New route or route change | Modify frontend source so CI regenerates the route manifest. **Never edit the manifest directly.** | `workspaces/{app}/docs/routes.md` (read-only, auto-generated) |
+| New or changed API call from frontend | Modify frontend source so CI regenerates the consumed-endpoints manifest. **Never edit it directly.** | `workspaces/{app}/docs/consumed-endpoints.md` (read-only, auto-generated) |
+| Architectural decision needed | Propose an ADR (next `ADR-XXX` ID) | `docs/architecture/` |
+| Contradicting update | Propose an ADR **before** changing service code that would alter a generated contract | `docs/architecture/` |
 
-All contract changes must be presented to the human for review before proceeding.
+All contract files (`openapi.json`, `entities.md`, `routes.md`, `consumed-endpoints.md`) are auto-generated by each workspace's CI pipeline. The agent reads them but **never creates or modifies them directly**. To change a contract, change the source code and let CI regenerate. ADR proposals must still be presented to the human for review before proceeding.
 
 ---
 
@@ -136,6 +150,7 @@ All contract changes must be presented to the human for review before proceeding
 
 | Artifact | Pattern | Example |
 |---|---|---|
+| PRD (Product Requirements Document) | `PRD-XXX` | `PRD-001` |
 | Feature Spec | `FS-XXX` | `FS-001` |
 | Impact Analysis | `IA-XXX` | `IA-001` |
 | Test Spec | `TS-XXX` | `TS-001` |
@@ -153,7 +168,7 @@ At the start of every session:
 
 1. Read `CLAUDE.md` (this file).
 2. Read `CLAUDE.learnings.md`.
-3. Read `registry/project.yaml`.
+3. Read `docs/project.md`.
 4. Read all files in `.claude/rules/`.
 5. If the human specifies a feature, navigate to its folder under `spec/`.
 6. Check for `status.yaml`:
@@ -162,11 +177,11 @@ At the start of every session:
 
      | Files present | Action |
      |---|---|
-     | Nothing | Ask the human to author or draft an FS |
-     | FS only | Phase 1 — review FS, generate IA |
-     | FS + IA | Phase 2 — generate TS + WPs |
-     | FS + IA + TS | Phase 3 — generate WPs |
-     | FS + IA + TS + WPs | Phase 4 — implement |
+     | Nothing | Phase 0 — draft a PRD with the human |
+     | PRD only | Phase 1 — generate FS + IA |
+     | PRD + FS + IA | Phase 2+3 — generate TS + WPs |
+     | PRD + FS + IA + TS | Phase 3 — generate WPs |
+     | PRD + FS + IA + TS + WPs | Phase 4 — implement |
 
      Create `status.yaml` immediately to begin tracking.
 

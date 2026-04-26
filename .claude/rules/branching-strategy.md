@@ -6,8 +6,8 @@ Always create feature branches automatically. Never ask the human — just follo
 
 | Repo | Pattern | Example |
 |---|---|---|
-| Spec-hub | `spec/{story-ID}-{slug}` | `spec/story-0001-guest-checkout` |
-| Workspace | `feat/{story-ID}-{WP-ID}` | `feat/story-0001-WP-001-BE` |
+| Spec-hub | `spec/{feature-ID}-{slug}` | `spec/001-guest-checkout` |
+| Workspace | `feat/{feature-ID}-{WP-ID}` | `feat/001-WP-001-BE` |
 
 - **Spec-hub:** One branch per feature. Covers all spec artifacts (TS, WPs, contract changes, status updates). Create the branch before the first spec commit.
 - **Workspace:** One branch per Work Package. BE and FE always get separate branches. Create the branch before the first implementation commit.
@@ -15,7 +15,7 @@ Always create feature branches automatically. Never ask the human — just follo
 ## Commit Messages
 
 ```
-{type}({story-ID}): {short description}
+{type}({feature-ID}): {short description}
 
 {optional body}
 

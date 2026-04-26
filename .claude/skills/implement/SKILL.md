@@ -1,18 +1,18 @@
 ---
 name: implement
-description: Implements approved Work Packages in workspace repos. Executes WPs for a feature — runs parallel agents when independent WPs target different workspaces. Use after TS and WPs are approved (Phase 4).
-argument-hint: "[story-id] [slug]"
+description: Orchestrates Phase 4 implementation — validates, plans execution order, and delegates each WP to an executor sub-agent with minimal context. Use after TS and WPs are approved (Phase 4).
+argument-hint: "[feature-id] [slug] [--scope all|be|fe|WP-XXX-YY] [--validate]"
 ---
 
-# SDD Implement — Phase 4 Execution
+# SDD Implement — Phase 4 Orchestrator
 
 ## Overview
 
-Execute approved Work Packages for a feature. Read each WP, implement it in the target workspace, run tests, and verify the Definition of Done.
+Orchestrate the implementation of approved Work Packages for a feature. Validate prerequisites, determine execution order and parallelism, and delegate each WP to an executor sub-agent.
 
-The WP is the single source of truth. The agent does not deviate from it, does not add scope, and does not modify contracts. Implementation is autonomous — the agent only stops when genuinely blocked.
+This skill handles planning and coordination only. It does NOT implement code. Each WP is executed by a sub-agent loaded with `executor-protocol.md` and the minimal context needed for that single WP.
 
-When multiple WPs are independent and target different workspaces, run them in parallel using sub-agents. This is a judgment call — not forced. Sequential execution is fine when dependencies exist or when the situation is simpler.
+When multiple WPs are independent and target different workspaces, launch executor sub-agents in parallel. This is a judgment call — not forced. Sequential execution is fine when hard dependencies exist.
 
 ## When to Use
 
@@ -21,102 +21,60 @@ When multiple WPs are independent and target different workspaces, run them in p
 
 **When NOT to use:** Before WP approval, for spec drafting (use `/spec`), for TS/WP generation (use `/plan`).
 
-## Interaction Model
+## Execution Modes
 
-This skill is **low-interaction**. The WP is an approved spec — execute it.
-
-**Do NOT ask the human for:**
-- Confirmation before starting a WP
-- Permission to create branches (follow `.claude/rules/branching-strategy.md`)
-- Guidance on implementation choices already covered by the WP
-- Whether to run WPs in parallel (decide based on dependencies)
-
-**DO stop for the human ONLY when:**
-- Pre-flight gate fails (missing approvals, missing contracts)
-- Contract conflict discovered during implementation (see Guardrails)
-- 3 consecutive failed fix attempts (see Failure Escalation)
-- Genuinely ambiguous requirement that cannot be resolved from the WP content
-
-## Standing Instructions
-
-These apply at every step:
-
-- The WP is your specification. Implement exactly what it says — nothing more, nothing less.
-- Contracts are read-only. If the code doesn't match the contract, the code is wrong.
-- Write tests that map 1:1 to the TS scenarios in the WP. No extra tests, no missing tests.
-- The WP's Definition of Done is the only DoD. Do not invent additional checks beyond what the WP specifies.
-- Update `status.yaml` checkpoints after every taxonomy category. This is your crash recovery trail.
-- If running parallel sub-agents, each agent writes ONLY its own `phase_4.WP-XXX` entry in `status.yaml`. Never modify another WP's entry.
-- Commit early and often. Each checkpoint category should have at least one commit.
-- Follow `.claude/rules/branching-strategy.md` for branch creation — automatic, no asking.
-- Implementation source code is committed only to workspace submodule repos, never to the spec-hub.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "This endpoint needs one more field not in the WP" | If it's not in the WP, it's not in scope. Flag it as a suggestion for a future WP. |
-| "I'll add this helper utility — it's not in the WP but it's useful" | Useful doesn't mean in-scope. Implement only what the WP requires. |
-| "The contract seems wrong, I'll adjust my code to work around it" | Contracts are frozen. STOP, block, recommend. Do not patch around it. |
-| "This test is redundant, I'll skip it" | Every TS scenario in the WP gets a test. No exceptions. |
-| "I'll fix this later" | There is no later. Checkpoint what works, block what doesn't. |
-| "The WP doesn't mention observability, so I'll skip it" | Check the WP's DoD. If it lists observability, implement it. If it doesn't, don't invent it. |
-| "I need to read the FS to understand this AC" | The AC is copied verbatim in the WP. If it's still unclear, block — don't go hunting. |
-| "This dependency WP isn't done but I can probably work around it" | Check the dependency graph. If the WP depends on it, wait or mock per the WP's instructions. |
-
-## Red Flags
-
-Stop and reassess if you catch yourself doing any of these:
-
-- Implementing features not described in the WP
-- Modifying files in `contracts/`, `spec/`, or `reference/` (except `status.yaml`)
-- Reading the FS or TS directly instead of the verbatim copies in the WP
-- Skipping TS scenarios because they seem redundant
-- Continuing past 3 failed fix attempts on the same issue
-- Writing to another WP's `phase_4` entry in `status.yaml`
-- Starting a WP whose dependencies aren't `done`
-- Asking the human for implementation guidance that's already in the WP
-- Adding DoD checks that aren't in the WP's Definition of Done
-- Committing implementation code to the spec-hub repo
+| Mode | Trigger | What runs |
+|---|---|---|
+| Full feature | `--scope all` (default) | Every non-done WP |
+| Backend only | `--scope be` | WPs targeting `type: backend` workspaces |
+| Frontend only | `--scope fe` | WPs targeting `type: frontend` workspaces |
+| Single WP | `--scope WP-XXX-YY` | That one WP only |
+| Validation | `--validate` | Runs FE tests against real BE (no MSW) |
 
 ---
 
 ## The Workflow
 
 ```
-SETUP ──→ PRE-FLIGHT ──→ PLAN ──→ IMPLEMENT WPs ──→ FEATURE COMPLETE
-  │            │            │           │                   │
-  ▼            ▼            ▼           ▼                   ▼
-Load WPs    Validate     Determine   Per-WP:             All WPs done,
-+ context   approvals,   order +     branch →            report to human
-            contracts,   parallelism implement →
-            workspaces               test → DoD
+SETUP ──→ PRE-FLIGHT ──→ SURVEY ──→ DELEGATE WPs ──→ MONITOR ──→ COMPLETE
+  │            │            │            │               │            │
+  ▼            ▼            ▼            ▼               ▼            ▼
+Parse scope  Validate     Sub-agent    Launch executor  Track status, Report to
++ load       approvals,   reads WP     sub-agents with  relay blocks, human
+routes       contracts,   headers +    minimal context   launch next
+             workspaces   deps only                      wave
 ```
 
-Pre-flight is the gate. If it fails, implementation does not start.
+For `--validate` mode: SETUP → PRE-FLIGHT → VALIDATE → REPORT (skips survey/delegate/monitor).
+
+Pre-flight is the gate. If it fails, no delegation happens.
 
 ---
 
 ### Step 1: Setup
 
-If arguments provided: `$0` = story-ID, `$1` = slug. Otherwise, list folders in `spec/` and identify the feature with `current_phase: 4`.
+Parse arguments: `$0` = feature-ID, `$1` = slug (optional), `--scope` (default: `all`), `--validate` flag.
+
+If no arguments: list folders in `spec/` and identify the feature with `current_phase: 4`.
 
 Steps:
 1. Navigate to the feature folder under `spec/`
 2. Read `status.yaml` — verify `current_phase` is `4`
-3. Read ALL WP files in the feature folder
-4. Load `registry/routes.yaml` — map each WP to its target workspace
-5. Load skill reference files:
-   - `${CLAUDE_SKILL_DIR}/references/checkpoint-taxonomy.md`
-   - `${CLAUDE_SKILL_DIR}/references/resume-protocol.md`
-   - `${CLAUDE_SKILL_DIR}/references/be-guide.md` and/or `${CLAUDE_SKILL_DIR}/references/fe-guide.md` based on workspace types involved
-6. If resuming an interrupted session: follow the resume protocol
+3. Parse `--scope` argument. Valid values: `all` (default), `be`, `fe`, or a specific WP ID (e.g., `WP-003-FE`)
+4. If `--validate` flag is present → skip to Step 6 (Validation Mode)
+5. Load `routes.yaml` (root) — map workspace IDs to types (`backend` / `frontend`)
+6. Load orchestrator reference:
+   - `${CLAUDE_SKILL_DIR}/references/checkpoint-taxonomy.md` — for understanding checkpoint state across all WPs
+7. If `--scope` is a specific WP ID → read only that single WP file (for pre-flight and direct delegation — skip survey in Step 3)
+8. If `--scope` is `all`, `be`, or `fe` → do NOT read WP files here. The survey sub-agent handles dependency analysis in Step 3.
+
+Do NOT load executor references at this level (`be-guide.md`, `fe-guide.md`, `resume-protocol.md`, `executor-protocol.md`). Each executor sub-agent loads its own.
 
 ---
 
 ### Step 2: Pre-Flight Gate
 
-Validate before implementing anything. Run every check. Collect all failures — do not stop at the first one.
+Validate before delegating anything. Run every check. Collect all failures — do not stop at the first one.
 
 #### Artifact Approval
 
@@ -126,20 +84,17 @@ Validate before implementing anything. Run every check. Collect all failures —
 | FS is approved | `status.yaml` `artifacts.FS-XXX.status == approved` | BLOCK |
 | IA is approved (if exists) | `status.yaml` `artifacts.IA-XXX.status == approved` | BLOCK |
 | TS is approved | `status.yaml` `artifacts.TS-XXX.status == approved` | BLOCK |
-| Every WP is approved | `status.yaml` `artifacts.WP-XXX.status == approved` for each | BLOCK |
+| Every in-scope WP is approved | `status.yaml` `artifacts.WP-XXX.status == approved` for each WP matching the scope | BLOCK |
 
 #### Contract Verification
 
-| Check | How | Fail Action |
-|---|---|---|
-| Every contract referenced in WPs exists | Read each WP's "Relevant Contracts" section, verify file exists in `contracts/` | BLOCK |
-| Contract content matches WP excerpts | Spot-check key endpoints/schemas — the WP may reference a contract version that has since changed | WARN |
+Contract verification is deferred to each executor sub-agent during implementation. The orchestrator does not read full WP contents (the survey agent reads only headers and dependency sections). Each executor validates its own WP's contract excerpts against the workspace's actual contract files.
 
 #### Workspace Readiness
 
 | Check | How | Fail Action |
 |---|---|---|
-| Target workspace registered | `registry/routes.yaml` has the workspace ID | BLOCK |
+| Target workspace registered | `routes.yaml` has the workspace ID | BLOCK |
 | No other agent active in workspace | No other WP targeting the same workspace has `phase_4` status `in_progress` | BLOCK — wait or pick a different WP |
 
 #### Cross-Feature Dependencies
@@ -147,6 +102,13 @@ Validate before implementing anything. Run every check. Collect all failures —
 | Check | How | Fail Action |
 |---|---|---|
 | `depends_on` features are done | If FS declares `depends_on`, check dependency `status.yaml` | BLOCK for BE WPs. FE may proceed if WP includes mock instructions |
+
+#### Single-WP Scope Additional Checks
+
+When `--scope WP-XXX-YY`:
+- Validate that specific WP's approval status
+- Parse the WP's dependency section and verify all **hard** dependencies (same-type) are `done`
+- **Soft** dependencies (cross-type) do not block — see Dependency Classification below
 
 #### Decision
 
@@ -163,184 +125,395 @@ IF all checks pass:
 
 ---
 
-### Step 3: Execution Plan
+### Step 3: Survey + Execution Plan
 
-Determine the order and parallelism for all WPs.
+Two sub-steps: survey dependencies, then delegate executors.
 
-1. **Read dependency info** from each WP (plan puts dependency order in every WP)
-2. **Skip completed WPs**: if `phase_4.WP-XXX.status == done`, skip it
-3. **Determine execution approach**:
+#### Step 3a: Dependency Survey
+
+**For `--scope all|be|fe`:** Launch a survey sub-agent to build the execution plan. This keeps the orchestrator's context lean — it never reads full WP files.
+
+Launch the survey sub-agent (Agent tool) with this prompt:
 
 ```
-IF only one WP remains:
-  → Execute it directly (Step 4).
+Survey Work Package Dependencies: {feature-ID}
 
-IF multiple WPs remain AND they target different workspaces AND have no dependencies between them:
-  → Run them in parallel using sub-agents (one Task per WP).
-  → Each sub-agent receives the WP path and runs Step 4 independently.
+You are a lightweight survey agent. Scan WP files and produce a structured execution plan.
+You do NOT implement anything.
 
-IF multiple WPs remain with dependencies:
-  → Execute in dependency order. Start with WPs that have no unmet dependencies.
-  → After each WP completes, check if newly unblocked WPs can run in parallel.
+## Instructions
+
+1. List all WP-*.md files in spec/{feature-folder}/
+2. Read status.yaml at spec/{feature-folder}/status.yaml
+3. For each WP file, read ONLY:
+   - The header block (title, Feature, Target workspace, Status lines)
+   - The "Dependency Info" section (search for ## Dependency, ## Dependencies, or ### Dependency)
+   - STOP reading after the dependency section. Do NOT read ACs, Test Scenarios, Contracts,
+     Implementation Order, or any other section.
+4. Cross-reference each WP's Target workspace with routes.yaml to determine type:
+   Routes file: routes.yaml
+5. Apply scope filter: --scope {scope}
+   - "all": keep all WPs
+   - "be": keep only WPs targeting workspaces with type: backend
+   - "fe": keep only WPs targeting workspaces with type: frontend
+6. Skip WPs whose phase_4 status in status.yaml is "done"
+   - WPs with status "done_with_mocks" are included (they may need re-validation later)
+7. For each in-scope WP, classify dependencies:
+   - HARD: dependency is same type (BE→BE or FE→FE) — downstream MUST wait
+   - SOFT: dependency is cross-type (FE→BE or BE→FE) — downstream proceeds with mocks
+   - Out-of-scope dependencies are always SOFT
+8. Compute wave ordering based on HARD dependencies only:
+   - Wave 1: WPs with no hard dependencies (or whose hard deps are all done/done_with_mocks)
+   - Wave 2: WPs whose hard deps are all in wave 1 or already done
+   - Continue until all WPs are assigned
+9. Return the plan in this exact format:
+
+EXECUTION_PLAN_START
+wave_1:
+  - id: WP-XXX-YY
+    workspace: {workspace-id}
+    type: {backend|frontend}
+    hard_deps: []
+    soft_deps: []
+  - id: WP-XXX-YY
+    workspace: {workspace-id}
+    type: {frontend}
+    hard_deps: []
+    soft_deps: [WP-XXX-YY]
+wave_2:
+  - id: WP-XXX-YY
+    workspace: {workspace-id}
+    type: {frontend}
+    hard_deps: [WP-XXX-YY]
+    soft_deps: [WP-XXX-YY]
+EXECUTION_PLAN_END
+
+## Files
+- Feature folder: spec/{feature-folder}/
+- Status file: spec/{feature-folder}/status.yaml
+- Routes file: routes.yaml
+
+## Constraints
+- Do NOT read full WP files. Only headers + dependency sections.
+- Do NOT modify any files.
+- Return ONLY the execution plan in the specified format.
+```
+
+**For `--scope WP-XXX-YY`:** Skip survey. The orchestrator already read the single WP in Step 1. Build a trivial plan:
+
+```
+wave_1:
+  - id: {WP-ID}
+    workspace: {workspace-id from WP header}
+    type: {backend|frontend from routes.yaml}
+    hard_deps: []
+    soft_deps: [{any cross-type deps from WP}]
+```
+
+#### Dependency Classification Rules
+
+These rules are applied by the survey sub-agent, and also by the orchestrator for single-WP scope:
+
+| Dependency direction | Classification | Behavior |
+|---|---|---|
+| BE → BE | **Hard** | Downstream must wait for upstream to complete |
+| FE → FE | **Hard** | Downstream must wait for upstream to complete |
+| FE → BE | **Soft** | FE proceeds immediately with MSW mocks |
+| BE → FE | **Soft** | BE proceeds (rare case) |
+
+Scope interaction:
+- `--scope all`: cross-type deps are soft, same-type deps are hard
+- `--scope fe`: all BE deps are automatically soft (BE WPs are out of scope)
+- `--scope be`: all FE deps are automatically soft (FE WPs are out of scope)
+
+The contract excerpts already embedded in each WP provide everything needed to build mocks. FE WPs have OpenAPI path + schema excerpts sufficient for MSW handlers. No additional mock setup is required.
+
+#### Step 3b: Delegate
+
+Using the survey output (or trivial plan for single WP), delegate executor sub-agents:
+
+```
+IF only one WP in the plan:
+  → Delegate to a single executor sub-agent.
+
+IF multiple WPs in wave 1 AND they target different workspaces:
+  → Launch executor sub-agents in parallel (one per WP).
+
+IF multiple WPs target the same workspace:
+  → Execute sequentially within that workspace (one agent per workspace at a time).
+
+After each wave completes:
+  → Read status.yaml. Check for blockers or newly unblocked WPs.
+  → Launch next wave of sub-agents for WPs whose hard deps are now met.
 
 IF a WP blocks during execution:
-  → Downstream WPs that DEPEND on the blocked WP → HOLD automatically.
-  → Downstream WPs with NO dependency on the blocked WP → continue.
+  → Downstream WPs with a HARD dependency on the blocked WP → HOLD.
+  → Downstream WPs with only a SOFT dependency or NO dependency → continue.
   → Report the blocked WP to the human with recommendation.
 ```
 
-Proceed directly to execution. Do not present the plan to the human.
+#### Sub-Agent Handoff Protocol
+
+For each WP to execute, launch a sub-agent (Agent tool) with this prompt structure:
+
+```
+Implement Work Package: {WP-ID}
+
+You are an executor implementing a single Work Package. Read and follow the executor protocol strictly.
+
+## Files to Load
+
+1. .claude/skills/implement/references/executor-protocol.md
+   — Your operating instructions. Read in full before starting.
+
+2. .claude/skills/implement/references/{be-guide.md OR fe-guide.md}
+   — Checkpoint procedures for {backend OR frontend} workspaces.
+
+3. spec/{feature-folder}/{WP-ID}.md
+   — The Work Package. This is your specification.
+
+4. workspaces/{workspace-id}/CLAUDE.md
+   — Workspace context: tech stack, API surface, directory layout, dev commands.
+
+{IF resuming — include this line:}
+5. .claude/skills/implement/references/resume-protocol.md
+   — Resume procedure. Your last checkpoint was: "{last_checkpoint value}"
+
+## Context
+
+- Workspace path: workspaces/{workspace-id}
+- Workspace type: {backend OR frontend}
+- Status file: spec/{feature-folder}/status.yaml
+- Your status entry: phase_4.{WP-ID}
+- Mode: {Fresh start OR Resume from: {last_checkpoint}}
+
+{IF WP has unmet soft (cross-type) dependencies — include this block:}
+## Mock-only Dependencies
+
+The following WPs are not yet deployed. Use MSW mocks for their endpoints.
+Contract excerpts are already in your WP's "Relevant Contracts" section.
+
+{For each soft dep that is not done:}
+- {WP-ID} ({workspace-id}) — status: {status from status.yaml}
+{End for}
+
+When all tests pass and DoD is complete:
+- Set your status to `done_with_mocks` (not `done`).
+- Add `mock_dependencies: [{list of WP-IDs}]` to your phase_4 status.yaml entry.
+{End IF}
+
+## Constraints
+
+- Do NOT read other WP files.
+- Do NOT read the FS or TS directly — use the verbatim copies in your WP.
+- Do NOT modify files in spec/ or workspace docs/ (except status.yaml checkpoints).
+- Write ONLY your own phase_4.{WP-ID} entry in status.yaml.
+```
+
+**What the executor does NOT receive:**
+- Other WP files (it only sees its own WP)
+- This orchestrator SKILL.md
+- `routes.yaml` (workspace path already resolved by orchestrator)
+- `checkpoint-taxonomy.md` (the be-guide/fe-guide cover checkpoint procedures)
+- Any spec-phase reference files
+- The survey output or execution plan
+
+**Do not present the execution plan to the human.** Proceed directly to delegation.
 
 ---
 
-### Step 4: Implement a Work Package
+### Step 4: Monitor and Coordinate
 
-This is the core execution loop. Runs for each WP, either inline or as a sub-agent.
+After delegating:
 
-#### 4.1 Initialize Workspace
-
-1. Check if the workspace submodule exists at the path specified in `registry/routes.yaml`
-
-```
-IF workspace directory does not exist or is not a git submodule:
-  → ASK the human for the git repository URL for this workspace.
-  → Add it as a git submodule: git submodule add <repo-url> workspaces/{workspace-id}
-  → Commit the submodule reference in the spec-hub (this is the ONLY spec-hub commit allowed)
-
-IF workspace exists but is empty (no pyproject.toml / package.json):
-  → The WP should include scaffold instructions. Begin with the scaffold checkpoint.
-  → Reference contracts/architecture/workspace-bootstrap.md for the standard toolchain and structure.
-```
-
-2. Navigate to the workspace submodule
-3. Read the WP in full — this is your specification
-4. Create a feature branch per `.claude/rules/branching-strategy.md`
-5. Update `status.yaml`: set `phase_4.WP-XXX.status` to `in_progress`
-
-#### 4.2 Resume Check
-
-```
-IF status.yaml phase_4.WP-XXX.last_checkpoint exists:
-  → Follow the resume protocol (references/resume-protocol.md)
-  → Skip completed checkpoint categories
-  → Re-run tests to verify current state before continuing
-
-IF no checkpoint exists:
-  → Fresh start. Begin from the first checkpoint category.
-```
-
-#### 4.3 Implement
-
-Follow the WP's Implementation Order section. The WP drives implementation.
-
-**Precedence rule:**
-1. **WP Implementation Order** — always primary. If the WP specifies an order, follow it exactly.
-2. **Reference guide** (`be-guide.md` or `fe-guide.md`) — fills gaps. If the WP doesn't specify how to approach a checkpoint, follow the reference guide's per-checkpoint procedure.
-3. **Agent judgment** — last resort. If both the WP and the reference guide are silent, implement the simplest solution that passes the TS scenarios.
-
-If the WP and reference guide contradict each other, the WP wins.
-
-**After each checkpoint category** (see `references/checkpoint-taxonomy.md`), update `status.yaml`:
-
-```yaml
-phase_4:
-  WP-XXX-BE:
-    status: in_progress
-    last_checkpoint: "models — ORM models and Alembic migration created"
-```
-
-Commit after each checkpoint category. Use the commit message convention from `.claude/rules/branching-strategy.md`.
-
-#### 4.4 Test
-
-Write tests that map 1:1 to the TS scenarios listed in the WP's "Test Scenarios" section.
-
-- Each TS scenario becomes one test function (or one parametrized case)
-- Test names reference the scenario ID: `test_ts_001_003_stock_conflict_rejects_order`
-- Use the testing patterns from the reference guide (`be-guide.md` or `fe-guide.md`)
-
-Run all tests. All must pass before proceeding to DoD.
-
-#### 4.5 Definition of Done
-
-Run the Definition of Done checklist **from the WP**. The WP's DoD is the only authoritative checklist — do not add, remove, or modify checks.
-
-If every item passes, proceed to completion. If any item fails, fix it. If you can't fix it after 3 attempts, follow Failure Escalation.
-
-#### 4.6 Complete
-
-1. Update `status.yaml`: set `phase_4.WP-XXX.status` to `done`
-2. Clear `last_checkpoint` (WP is complete)
-3. Return to Step 3 to check if more WPs are ready to execute
+1. Wait for sub-agent completion
+2. Read `status.yaml` after each WP completes to check for:
+   - Blockers reported by the executor
+   - Newly unblocked downstream WPs ready for the next wave (hard deps now met)
+3. Launch next wave of executor sub-agents if hard dependencies are now met
+4. If an executor reports a blocker:
+   - Relay the blocker and recommendation to the human
+   - Hold downstream WPs with a hard dependency on the blocked WP
+   - Continue WPs with only soft dependencies or no dependency on the blocked WP
 
 ---
 
-### Step 5: Feature Completion
+### Step 5: Completion
 
-After all WPs are done:
+After all in-scope WPs are done:
 
-1. Verify every WP's `phase_4` status is `done` in `status.yaml`
+1. Read `status.yaml` — verify every in-scope WP's `phase_4` status is `done` or `done_with_mocks`
 2. Report to the human:
 
 ```
-FEATURE COMPLETE: story-XXXX-{slug}
+IMPLEMENTATION COMPLETE: {feature-ID}-{slug} (scope: {scope})
 
 All WPs implemented:
   - WP-001-BE — inventory-service — done
   - WP-002-BE — order-service — done
-  - WP-001-FE — storefront-app — done
+  - WP-001-FE — storefront-app — done_with_mocks (mocked: WP-001-BE, WP-002-BE)
   ...
 
+{IF any WP is done_with_mocks:}
+FE WPs were implemented with MSW mocks for BE dependencies.
+Run `/implement {feature-id} --validate` to verify FE against real backends.
+{END IF}
+
+{IF all WPs are done (none done_with_mocks):}
 All DoD checklists passed. Ready for human review.
+{END IF}
 ```
 
 ---
 
-## Guardrails
+### Step 6: Validation Mode
 
-### Contract Freeze
+Triggered by `/implement {feature-id} --validate`. This step verifies that FE implementations work against real BE services instead of MSW mocks.
 
-Contracts are read-only during Phase 4 (per `.claude/rules/contracts-readonly-phase4.md`).
+#### Prerequisites
 
-If implementation reveals a contract issue:
+1. Read `status.yaml`
+2. ALL WPs must be either `done` or `done_with_mocks`. If any WP is `not_started`, `in_progress`, or `blocked` → BLOCK with message: "Cannot validate — {WP-ID} is still {status}."
+3. Find validation candidates: WPs with `status: done_with_mocks` where ALL entries in `mock_dependencies` now have `status: done`
+4. If no candidates exist → report "Nothing to validate. Either all WPs are fully done or mock dependencies are not yet complete." and exit.
 
-1. **STOP** implementation of this WP immediately.
-2. Add a blocker to `status.yaml` with a clear description.
-3. Set `phase_4.WP-XXX.status` to `blocked`.
-4. **Provide a recommendation** to the human:
-   - What the contract says vs. what the implementation needs
-   - Whether the fix is additive (safe) or breaking (needs ADR)
-   - Which consumers would be affected
-   - Your suggested resolution
-5. Wait for the human to decide. Do not patch around it.
-6. Other WPs not affected by this contract issue may continue.
+#### Validation Execution
 
-### Failure Escalation
+For each candidate WP, launch a validation sub-agent (Agent tool) with this prompt:
 
-If you attempt to fix a failing test, type error, or linter error and fail **3 consecutive times** on the same issue:
+```
+Validate Work Package: {WP-ID} — Integration Tests Against Real Backends
 
-1. Stop attempting. Do not continue cycling through fixes.
-2. Revert the affected file to its last working state.
-3. Add the issue to `status.yaml` `blockers`:
-   - What you tried (all 3 attempts)
-   - The exact error message
-   - Which TS scenario is affected
-4. Set `phase_4.WP-XXX.status` to `blocked`.
-5. Report to the human. Three failed attempts means you are missing context not in the WP.
+You are a validation agent. Run an existing FE test suite against real backend services
+instead of MSW mocks. You do NOT implement new code.
 
-### Scope Enforcement
+## Files to Load
 
-- Do NOT add features, endpoints, or behaviors not in the WP.
-- Do NOT modify files in `spec/`, `reference/`, or `contracts/` during implementation (except `status.yaml`).
-- Do NOT read the FS or TS directly — use the verbatim copies in the WP.
-- If you think something is missing from the WP, block and report. Do not fill the gap.
+1. .claude/skills/implement/references/validation-protocol.md
+   — Your operating instructions. Read in full before starting.
 
-### Unblocking a Blocked WP
+2. spec/{feature-folder}/{WP-ID}.md
+   — The Work Package. Reference for consumed endpoints and test scenarios.
 
-When the human resolves a blocker:
+3. workspaces/{fe-workspace-id}/CLAUDE.md
+   — Frontend workspace context.
 
-1. Re-read the WP in full — treat it as a fresh spec (it may have been updated).
-2. Resume from the `last_checkpoint` in `status.yaml` — do not re-run completed steps.
-3. Clear the resolved entry from `status.yaml` `blockers`.
-4. Set `phase_4.WP-XXX.status` back to `in_progress`.
-5. Re-run existing tests to verify state before continuing.
+## Context
+
+- Frontend workspace: workspaces/{fe-workspace-id}
+- Status file: spec/{feature-folder}/status.yaml
+- Your status entry: phase_4.{WP-ID}
+- Mock dependencies to validate against:
+{For each mock dep:}
+  - {WP-ID}: workspaces/{be-workspace-id}
+{End for}
+
+## Constraints
+
+- Do NOT modify source code (except adding INTEGRATION guard to tests/setup.ts if missing).
+- Do NOT modify test files or MSW handlers.
+- Do NOT modify backend code.
+- Write ONLY your own phase_4.{WP-ID} entry in status.yaml.
+```
+
+#### Result Handling
+
+After each validation sub-agent completes:
+
+```
+IF all tests PASS:
+  → Update phase_4.{WP-ID}.status to "done"
+  → Remove mock_dependencies field
+  → Remove validation_failures field if present
+
+IF any tests FAIL:
+  → Keep phase_4.{WP-ID}.status as "done_with_mocks"
+  → Record validation_failures in status.yaml:
+    validation_failures:
+      - test: "TS-XXX-YYY"
+        endpoint: "GET /products"
+        error: "Expected 200, got 500"
+  → Report failures to the human with contract mismatch details
+```
+
+#### Final Report
+
+After all validation sub-agents complete:
+
+```
+VALIDATION COMPLETE: {feature-ID}-{slug}
+
+Results:
+  - WP-001-FE — storefront-app — PASS → status: done
+  - WP-003-FE — admin-app — FAIL → 2 tests failed (see status.yaml)
+
+{IF all validations passed AND all WPs are now "done":}
+All WPs validated. Setting feature_status: feature_complete.
+{END IF}
+
+{IF any validations failed:}
+Contract mismatches found. Review validation_failures in status.yaml.
+{END IF}
+```
+
+Update `status.yaml` with `feature_status: feature_complete` when all WPs reach `done`.
+
+---
+
+## status.yaml — Extended Format
+
+### Per-WP Status Values
+
+| Status | Meaning |
+|---|---|
+| `not_started` | WP has not been delegated yet |
+| `in_progress` | Executor sub-agent is currently working |
+| `blocked` | WP hit a blocker during implementation |
+| `done` | Complete — tested against real deps or has no cross-type deps |
+| `done_with_mocks` | FE complete — tested with MSW mocks for BE deps |
+
+### Per-WP Fields
+
+| Field | When present |
+|---|---|
+| `last_checkpoint` | During `in_progress`. Cleared when WP reaches `done` or `done_with_mocks`. |
+| `mock_dependencies` | When status is `done_with_mocks`. List of WP-IDs that were mocked. |
+| `validation_failures` | After a failed `--validate` run. Cleared on next successful validation. |
+
+### Feature-Level Status
+
+```yaml
+feature_status: feature_complete   # Set when ALL WPs are "done" (none "done_with_mocks")
+```
+
+### Example
+
+```yaml
+phase_4:
+  WP-001-BE:
+    status: done
+  WP-002-BE:
+    status: done
+  WP-001-FE:
+    status: done_with_mocks
+    mock_dependencies: [WP-001-BE, WP-002-BE]
+  WP-002-FE:
+    status: in_progress
+    last_checkpoint: "components — catalog grid and product detail pages"
+```
+
+After successful validation:
+
+```yaml
+phase_4:
+  WP-001-BE:
+    status: done
+  WP-002-BE:
+    status: done
+  WP-001-FE:
+    status: done
+  WP-002-FE:
+    status: done
+
+feature_status: feature_complete
+```

@@ -1,7 +1,7 @@
 ---
 name: spec
-description: Writes a Feature Spec for SDD with impact analysis and contract review baked in. Use after the Feature Concept (PRD) is approved, when ready to define acceptance criteria.
-argument-hint: "[story-id] [slug]"
+description: Writes a Feature Spec for SDD with impact analysis and contract review baked in. Use after the PRD is approved, when ready to define acceptance criteria.
+argument-hint: "[feature-id] [slug]"
 allowed-tools: Read Glob
 disable-model-invocation: true
 ---
@@ -10,17 +10,17 @@ disable-model-invocation: true
 
 ## Overview
 
-Generate an Impact Analysis (IA) and Feature Spec (FS) in a single pass from an approved Feature Concept. The only interactive step is resolving open questions or ambiguities in the PRD — everything else is autonomous.
+Generate an Impact Analysis (IA) and Feature Spec (FS) in a single pass from an approved PRD. The only interactive step is resolving open questions or ambiguities in the PRD — everything else is autonomous.
 
 The FS is the contract between the Product Owner and the implementation agent. Every AC must be testable, traceable to the concept, and aligned with existing contracts.
 
 ## When to Use
 
-- After a Feature Concept (PRD) has been approved
+- After a PRD has been approved
 - When ready to define acceptance criteria for a feature
 - When the UX/UI design (if required by PRD) is complete
 
-**Requires:** An approved PRD in the feature folder (`spec/Story-XXXX/`).
+**Requires:** An approved PRD in the feature folder (`spec/XXX-slug/`).
 
 **When NOT to use:** Before concept approval (use `/prd`), during implementation, for PRD writing.
 
@@ -29,7 +29,7 @@ The FS is the contract between the Product Owner and the implementation agent. E
 These apply throughout generation — not just one step:
 
 - Never invent ACs beyond what the PRD describes. If you think one is missing, include it in the FS clearly labeled `[AGENT SUGGESTION]` so the human can accept or reject during review.
-- Never silently assume a contract supports what you're writing. Check `contracts/` or flag as "to be created."
+- Never silently assume a contract supports what you're writing. Check the auto-generated specs in workspace `docs/` dirs or flag as "to be created."
 - For every happy-path AC, generate at least one error/edge-case AC where the happy path can fail.
 - If the PRD is vague on a point, reframe it as testable conditions and include both the interpretation and the `Testable:` line. The human validates during review.
 - Every affected service from the impact analysis must have at least one AC. If a service is affected but has no AC, either the analysis is wrong or an AC is missing.
@@ -41,9 +41,9 @@ These apply throughout generation — not just one step:
 |---|---|
 | "The PRD covers this, I don't need to dig deeper" | The PRD captures intent, not precision. ACs require details the PRD deliberately left vague. |
 | "This AC is obvious, it doesn't need a Testable: line" | If you can't write the Testable: line, the AC is too vague. Every AC, no exceptions. |
-| "I'll assume the contract supports this" | Check `contracts/`. If the endpoint doesn't exist, flag it. Silent assumption = spec bug found in Phase 4. |
+| "I'll assume the contract supports this" | Check the auto-generated specs in workspace `docs/` dirs. If the endpoint doesn't exist, flag it. Silent assumption = spec bug found in Phase 4. |
 | "Edge cases can be handled during implementation" | Edge cases not in the FS won't be in the TS, won't be in the WP, won't be tested. Capture them now. |
-| "This service is probably not affected" | Check `registry/routes.yaml`. "Probably" is not analysis. |
+| "This service is probably not affected" | Check `routes.yaml`. "Probably" is not analysis. |
 | "The human will catch this in review" | You are the first line of defense. The verification checklist exists because review gates are not infallible. |
 
 ## Red Flags
@@ -54,7 +54,7 @@ Stop and reassess if you catch yourself doing any of these:
 - Adding ACs the PRD never described without labeling them `[AGENT SUGGESTION]`
 - No error/edge-case AC for a happy-path AC that can fail
 - Using implementation language ("use a cron job", "add a column") instead of behavioral language
-- Assuming a contract exists without checking `contracts/`
+- Assuming a contract exists without checking workspace `docs/` dirs
 - Leaving a service from the impact analysis without a corresponding AC
 
 ---
@@ -76,9 +76,9 @@ Two steps interactive (at most). One step autonomous. One human review gate.
 
 ### Step 1: Setup and PRD Assessment
 
-If arguments provided: `$0` = Story-ID, `$1` = slug. Otherwise:
+If arguments provided: `$0` = feature-ID, `$1` = slug. Otherwise:
 1. List existing folders in `spec/` and offer them if any match the context
-2. Ask the human: "Which feature folder? e.g., Story-0002-payment-flow"
+2. Ask the human: "Which feature folder? e.g., 002-payment-flow"
 
 **Output location:** `spec/{$0}-{$1}/` — all artifacts (FS, IA) are saved to this folder.
 
@@ -86,15 +86,18 @@ Steps:
 1. Navigate to the feature folder (create it if it doesn't exist)
 2. Verify PRD exists and status is approved in `status.yaml`
 3. Load domain context:
-   - `reference/glossary.md`, `personas.md`, `roles.md`
+   - `docs/reference/glossary.md`, `personas.md`, `roles.md`
 4. Load all skill reference files:
    - `${CLAUDE_SKILL_DIR}/template.md` — FS structure and Testable: line formats
    - `${CLAUDE_SKILL_DIR}/assets/impact-analysis-template.md` — IA document format
    - `${CLAUDE_SKILL_DIR}/references/contract-review-checklist.md` — contract review rules
 5. Load contracts and registry:
-   - `registry/routes.yaml` — all workspaces
-   - `contracts/api/` — all OpenAPI specs
-   - `contracts/data-schema/` — all entity schemas
+   - `routes.yaml` — all workspaces (includes `contracts` field with paths to each workspace's auto-generated specs)
+   - For each workspace in `routes.yaml`, read the auto-generated specs listed in `contracts` (read-only, never modify):
+     - Backend: `workspaces/{service}/docs/api/openapi.json` — OpenAPI spec
+     - Backend: `workspaces/{service}/docs/schema/entities.md` — entity schemas
+     - Frontend: `workspaces/{app}/docs/routes.md` — route manifest
+     - Frontend: `workspaces/{app}/docs/consumed-endpoints.md` — consumed backend endpoints
 6. Check the feature folder for existing FS and IA IDs to avoid collisions
 7. Read the PRD in full. Assess:
    - Are there unresolved open questions (unchecked `[ ]` items)?
@@ -104,7 +107,7 @@ Steps:
 If no approved PRD exists:
 
 ```
-BLOCKED: No approved Feature Concept found in this feature folder.
+BLOCKED: No approved PRD found in this feature folder.
 → Use /prd to create one first.
 ```
 
@@ -141,8 +144,8 @@ Generate both artifacts in one pass. Do not stop to ask the human questions. If 
 
 Answer these five questions:
 
-1. **Which services are affected?** — Read `registry/routes.yaml`, check each workspace
-2. **Which contracts need to change?** — Scan `contracts/api/` and `contracts/data-schema/`
+1. **Which services are affected?** — Read `routes.yaml`, check each workspace
+2. **Which contracts need to change?** — Read auto-generated specs from workspace `docs/` dirs (paths in `routes.yaml`)
 3. **Which consumers of those contracts exist?** — Identify downstream dependencies
 4. **What is the blast radius if this breaks?** — Assess scope of impact
 5. **Can this be done without changing contracts?** — Prefer additive changes over breaking ones
@@ -150,14 +153,14 @@ Answer these five questions:
 When anything is unclear, document it as an explicit assumption in the IA — do not stop to ask.
 
 If breaking changes are identified:
-- Flag for ADR proposal in `contracts/architecture/`
+- Flag for ADR proposal in `docs/architecture/`
 - Note in FS "Related Contracts" section
 
 #### 3b: Feature Spec — All Sections
 
 Generate the complete FS using the template structure (loaded in Step 1):
 
-**Goal** — Pull from PRD's WHAT and WHO. Name the primary persona from `reference/personas.md`.
+**Goal** — Pull from PRD's WHAT and WHO. Name the primary persona from `docs/reference/personas.md`.
 
 **Background** — Pull from PRD's WHY. Add business context.
 
@@ -182,9 +185,11 @@ Generate the complete FS using the template structure (loaded in Step 1):
 
 3. Cross-check each AC against:
    - Impact analysis — every affected service should have ≥1 AC
-   - `contracts/api/` — do referenced endpoints exist?
-   - `contracts/data-schema/` — do referenced entities exist?
-   - `reference/glossary.md` — is domain terminology correct?
+   - workspace `docs/api/openapi.json` — do referenced endpoints exist?
+   - workspace `docs/schema/entities.md` — do referenced entities exist?
+   - workspace `docs/routes.md` — do referenced routes exist? (frontend only)
+   - workspace `docs/consumed-endpoints.md` — do consumed endpoints match? (frontend only)
+   - `docs/reference/glossary.md` — is domain terminology correct?
 
 4. Flag missing contracts as "(to be created — see Contract Review)".
 
@@ -249,16 +254,16 @@ Run before writing files. Every item must pass.
 - [ ] Approved PRD was loaded and referenced
 - [ ] Impact analysis completed — all affected services identified
 - [ ] Header block complete (folder, status, author, date, depends on, blocks)
-- [ ] Goal names a persona from `reference/personas.md`
+- [ ] Goal names a persona from `docs/reference/personas.md`
 - [ ] Every AC has a unique `AC-XXX` ID and descriptive title
 - [ ] Every AC has a `Testable:` line with concrete verification
 - [ ] `Testable:` lines use standardized format (API / UI / System)
 - [ ] Error/edge-case ACs exist for every happy-path AC that can fail
 - [ ] Every affected service (from impact analysis) has ≥1 AC
-- [ ] ACs cross-checked against `contracts/api/` and `contracts/data-schema/`
+- [ ] ACs cross-checked against workspace contract docs (`openapi.json`, `entities.md`, `routes.md`, `consumed-endpoints.md`)
 - [ ] Missing contracts flagged as "to be created"
 - [ ] Breaking changes flagged with ADR recommendation
-- [ ] Domain terminology matches `reference/glossary.md`
+- [ ] Domain terminology matches `docs/reference/glossary.md`
 - [ ] Out of Scope section is present and non-empty
 - [ ] Open questions captured with options and recommendations (blocks approval if `[BLOCKS APPROVAL]`)
 - [ ] Contract review summary included in Related Contracts
