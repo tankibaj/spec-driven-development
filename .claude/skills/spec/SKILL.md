@@ -93,9 +93,11 @@ Steps:
    - `${CLAUDE_SKILL_DIR}/references/contract-review-checklist.md` — contract review rules
 5. Load contracts and registry:
    - `routes.yaml` — all workspaces (includes `contracts` field with paths to each workspace's auto-generated specs)
-   - For each workspace in `routes.yaml`, read the auto-generated specs (read-only, never modify):
-     - `workspaces/{service}/docs/api/openapi.json` — OpenAPI spec
-     - `workspaces/{service}/docs/schema/entities.md` — entity schemas
+   - For each workspace in `routes.yaml`, read the auto-generated specs listed in `contracts` (read-only, never modify):
+     - Backend: `workspaces/{service}/docs/api/openapi.json` — OpenAPI spec
+     - Backend: `workspaces/{service}/docs/schema/entities.md` — entity schemas
+     - Frontend: `workspaces/{app}/docs/routes.md` — route manifest
+     - Frontend: `workspaces/{app}/docs/consumed-endpoints.md` — consumed backend endpoints
 6. Check the feature folder for existing FS and IA IDs to avoid collisions
 7. Read the PRD in full. Assess:
    - Are there unresolved open questions (unchecked `[ ]` items)?
@@ -185,6 +187,8 @@ Generate the complete FS using the template structure (loaded in Step 1):
    - Impact analysis — every affected service should have ≥1 AC
    - workspace `docs/api/openapi.json` — do referenced endpoints exist?
    - workspace `docs/schema/entities.md` — do referenced entities exist?
+   - workspace `docs/routes.md` — do referenced routes exist? (frontend only)
+   - workspace `docs/consumed-endpoints.md` — do consumed endpoints match? (frontend only)
    - `docs/reference/glossary.md` — is domain terminology correct?
 
 4. Flag missing contracts as "(to be created — see Contract Review)".
@@ -256,7 +260,7 @@ Run before writing files. Every item must pass.
 - [ ] `Testable:` lines use standardized format (API / UI / System)
 - [ ] Error/edge-case ACs exist for every happy-path AC that can fail
 - [ ] Every affected service (from impact analysis) has ≥1 AC
-- [ ] ACs cross-checked against workspace `docs/api/openapi.json` and `docs/schema/entities.md`
+- [ ] ACs cross-checked against workspace contract docs (`openapi.json`, `entities.md`, `routes.md`, `consumed-endpoints.md`)
 - [ ] Missing contracts flagged as "to be created"
 - [ ] Breaking changes flagged with ADR recommendation
 - [ ] Domain terminology matches `docs/reference/glossary.md`

@@ -117,9 +117,11 @@ Steps:
    - `${CLAUDE_SKILL_DIR}/templates/wp-fe-template.md` — Frontend WP structure
    - `${CLAUDE_SKILL_DIR}/references/splitting-guide.md` — AC-to-WP splitting criteria
 6. Load `routes.yaml` — needed for workspace mapping
-7. Read auto-generated specs from workspace `docs/` dirs (paths in `routes.yaml`) — needed for contract excerpts (read-only, never modify):
-     - `workspaces/{service}/docs/api/openapi.json` — OpenAPI specs
-     - `workspaces/{service}/docs/schema/entities.md` — entity schemas
+7. Read auto-generated specs from workspace `docs/` dirs (paths in `routes.yaml` `contracts` field) — needed for contract excerpts (read-only, never modify):
+     - Backend: `workspaces/{service}/docs/api/openapi.json` — OpenAPI specs
+     - Backend: `workspaces/{service}/docs/schema/entities.md` — entity schemas
+     - Frontend: `workspaces/{app}/docs/routes.md` — route manifest
+     - Frontend: `workspaces/{app}/docs/consumed-endpoints.md` — consumed backend endpoints
 8. Check the feature folder for existing TS and WP IDs to avoid collisions
 
 ---
