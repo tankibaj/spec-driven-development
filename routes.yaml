@@ -37,9 +37,15 @@ workspaces:
     type: frontend
     language: typescript
     framework: react
+    contracts:
+      - workspaces/storefront-app/docs/routes.md
+      - workspaces/storefront-app/docs/consumed-endpoints.md
 
   admin-app:
     path: workspaces/admin-app
     type: frontend
     language: typescript
     framework: react
+    contracts:
+      - workspaces/admin-app/docs/routes.md
+      - workspaces/admin-app/docs/consumed-endpoints.md
