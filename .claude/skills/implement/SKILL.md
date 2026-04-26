@@ -149,8 +149,11 @@ You are an executor implementing a single Work Package. Read and follow the exec
 3. spec/{feature-folder}/{WP-ID}.md
    — The Work Package. This is your specification.
 
+4. workspaces/{workspace-id}/CLAUDE.md
+   — Workspace context: tech stack, API surface, directory layout, dev commands.
+
 {IF resuming — include this line:}
-4. .claude/skills/implement/references/resume-protocol.md
+5. .claude/skills/implement/references/resume-protocol.md
    — Resume procedure. Your last checkpoint was: "{last_checkpoint value}"
 
 ## Context
