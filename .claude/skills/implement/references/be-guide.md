@@ -2,13 +2,13 @@
 
 Reference for the implement skill when executing backend Work Packages. This guide fills gaps when the WP doesn't specify how to approach a checkpoint. **The WP always takes precedence over this guide.**
 
-Load this file when the target workspace has `type: backend` in `registry/routes.yaml`.
+Load this file when the target workspace has `type: backend` in `routes.yaml`.
 
 ---
 
 ## Project Structure
 
-Follow the structure from `contracts/architecture/workspace-bootstrap.md`. Key directories:
+Follow the structure from `docs/architecture/workspace-bootstrap.md`. Key directories:
 
 ```
 src/
@@ -107,7 +107,7 @@ curl http://localhost:8000/metrics
 1. Create HTTP client wrappers in `src/clients/` — one file per external service
 2. Each client uses `httpx.AsyncClient` with a configurable `base_url` from `src/config.py`
 3. Add `X-Request-ID` propagation: read from inbound request, attach to all outbound calls
-4. Set up structured JSON logging with `python-json-logger` (see `contracts/architecture/observability-standards.md`)
+4. Set up structured JSON logging with `python-json-logger` (see `docs/architecture/observability-standards.md`)
 5. Add `trace_id` to every log line via middleware
 6. Add custom Prometheus metrics for domain events if the WP specifies them
 7. **Verify:** client calls work against mock targets, logs are structured JSON, `X-Request-ID` echoed in response headers
@@ -161,7 +161,7 @@ docker compose run --rm app uv run pytest tests/ -v --tb=short
 # Common verification commands
 docker compose run --rm app uv run ruff check src/
 docker compose run --rm app uv run mypy src/
-docker compose run --rm app uv run schemathesis run ../../contracts/api/{service}.openapi.yaml --base-url http://localhost:8000 --checks all
+docker compose run --rm app uv run schemathesis run docs/api/openapi.json --base-url http://localhost:8000 --checks all
 ```
 
 ---
@@ -249,7 +249,7 @@ async def test_order_saga_stock_conflict(client, mock_inventory, mock_payment):
 | Tests that depend on execution order | Each test creates its own data. Use fixtures, not shared state. |
 | Missing `X-Tenant-ID` header validation | Every endpoint must validate the tenant header. Add middleware or dependency. |
 | Logging PII (emails, tokens) | Structured logging with field allowlists. Ruff rule `S320` for enforcement. |
-| Forgetting to propagate `X-Request-ID` | Use the `TracingTransport` pattern from `contracts/architecture/observability-standards.md`. |
+| Forgetting to propagate `X-Request-ID` | Use the `TracingTransport` pattern from `docs/architecture/observability-standards.md`. |
 | Alembic migration that doesn't match the model | Generate migration from model diff: `alembic revision --autogenerate`. Verify the generated SQL. |
 | Schemathesis failures on auth endpoints | Configure Schemathesis with `--header "X-Tenant-ID: ..."` and auth fixtures in `tests/contract/conftest.py`. |
 | Committing to the spec-hub repo | All implementation code goes in the workspace submodule. The only spec-hub commit is the submodule reference. |

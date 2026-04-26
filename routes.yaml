@@ -1,0 +1,45 @@
+# Workspace registry — every service and app in the project.
+# Keyed by id for direct lookup by the AI agent.
+#
+# Fields the agent uses:
+#   path:      where the submodule lives locally
+#   type:      backend | frontend
+#   language:  primary implementation language
+#   framework: (frontend only)
+#   contracts: spec files this workspace owns
+workspaces:
+  order-service:
+    path: workspaces/order-service
+    type: backend
+    language: python
+    contracts:
+      - workspaces/order-service/docs/api/openapi.json
+      - workspaces/order-service/docs/schema/entities.md
+
+  inventory-service:
+    path: workspaces/inventory-service
+    type: backend
+    language: python
+    contracts:
+      - workspaces/inventory-service/docs/api/openapi.json
+      - workspaces/inventory-service/docs/schema/entities.md
+
+  notification-service:
+    path: workspaces/notification-service
+    type: backend
+    language: python
+    contracts:
+      - workspaces/notification-service/docs/api/openapi.json
+      - workspaces/notification-service/docs/schema/entities.md
+
+  storefront-app:
+    path: workspaces/storefront-app
+    type: frontend
+    language: typescript
+    framework: react
+
+  admin-app:
+    path: workspaces/admin-app
+    type: frontend
+    language: typescript
+    framework: react

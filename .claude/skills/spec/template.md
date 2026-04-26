@@ -10,7 +10,7 @@ For the interactive drafting procedure, see [SKILL.md](SKILL.md).
 
 | Section | Purpose | Required? |
 |---|---|---|
-| **Header block** | Metadata: folder, status, author, date, concept ref, dependencies | Yes |
+| **Header block** | Metadata: folder, status, author, date, PRD ref, dependencies | Yes |
 | **Goal** | One paragraph: what + why + who benefits. Name the primary persona. | Yes |
 | **Background** | Business context, motivation, data backing the decision | Recommended |
 | **Impact Analysis Summary** | Which services and contracts are affected | Yes |
@@ -30,7 +30,7 @@ For the interactive drafting procedure, see [SKILL.md](SKILL.md).
 2. **Behavioral description** — states what happens, not how to implement it.
 3. **`Testable:` line** — every AC ends with a concrete verification method. If you cannot write this line, the AC is too vague.
 4. **Error/edge-case pairing** — happy-path ACs are paired with error/edge-case ACs where the happy path can fail (e.g., AC-005 order placement + AC-006 out-of-stock).
-5. **Contract-aligned** — references endpoints and schemas that exist in `contracts/` or are flagged for creation.
+5. **Contract-aligned** — references endpoints and schemas that exist in the auto-generated workspace specs or are flagged for creation.
 
 ---
 
@@ -53,8 +53,8 @@ Use one of these standardized patterns for the `Testable:` line:
 ```markdown
 # FS-XXX: {Feature Title}
 
-**Feature folder:** `Story-XXXX-{slug}`
-**Feature Concept:** PRD — {concept name}
+**Feature folder:** `XXX-{slug}`
+**PRD:** PRD-XXX — {name}
 **Status:** Draft
 **Author:** {name or team}
 **Last updated:** YYYY-MM-DD
@@ -66,12 +66,12 @@ Use one of these standardized patterns for the `Testable:` line:
 ## Goal
 
 <!-- What does this feature do, why does it matter, and who benefits?
-     Name the primary persona from reference/personas.md.
+     Name the primary persona from docs/reference/personas.md.
      Should trace directly to the PRD's WHAT and WHO. -->
 
 {What this feature delivers and the business outcome it drives.}
 
-**Primary persona:** {Name} — {Role description} (see `reference/personas.md`)
+**Primary persona:** {Name} — {Role description} (see `docs/reference/personas.md`)
 
 ---
 
@@ -189,9 +189,9 @@ Use one of these standardized patterns for the `Testable:` line:
      Include the contract change summary from the contract review step. -->
 
 **Existing contracts:**
-- `contracts/api/{service}.openapi.yaml`
-- `contracts/data-schema/{entity}.schema.md`
-- `contracts/architecture/ADR-XXX.md` — {decision title}
+- `workspaces/{service}/docs/api/openapi.json` (auto-generated, read-only)
+- `workspaces/{service}/docs/schema/entities.md` (auto-generated, read-only)
+- `docs/architecture/ADR-XXX.md` — {decision title}
 
 **Contract changes needed:**
 
