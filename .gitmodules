@@ -1,20 +1,20 @@
 [submodule "workspaces/inventory-service"]
 	path = workspaces/inventory-service
 	url = git@github.com:tankibaj/inventory-service.git
-	ignore = dirty
+	ignore = all
 [submodule "workspaces/order-service"]
 	path = workspaces/order-service
 	url = git@github.com:tankibaj/order-service.git
-	ignore = dirty
+	ignore = all
 [submodule "workspaces/notification-service"]
 	path = workspaces/notification-service
 	url = git@github.com:tankibaj/notification-service.git
-	ignore = dirty
+	ignore = all
 [submodule "workspaces/storefront-app"]
 	path = workspaces/storefront-app
 	url = git@github.com:tankibaj/storefront-app.git
-	ignore = dirty
+	ignore = all
 [submodule "workspaces/admin-app"]
 	path = workspaces/admin-app
 	url = git@github.com:tankibaj/admin-app.git
-	ignore = dirty
+	ignore = all
