@@ -25,7 +25,7 @@ So when you use AI coding tools, you hit a wall. You can get help inside one cod
    - `spec/` — browse any feature folder to see a real spec, test scenarios, and work packages
    - `docs/reference/` — product glossary, user personas, role definitions
    - `docs/architecture/` — ADRs, patterns, system design
-   - `workspaces/` — git submodules, each with auto-generated `docs/api/openapi.json` and `docs/schema/entities.md`
+   - `workspaces/` — git submodules, each with CI-generated docs (`openapi.json`, `entities.md` for BE; `routes.md`, `consumed-endpoints.md` for FE)
 
 **AI agents:** your entry point is `CLAUDE.md`, loaded automatically on every session.
 
@@ -185,6 +185,8 @@ spec-hub/
 │   │   ├── docs/api/openapi.json  #   CI-generated OpenAPI spec (read-only)
 │   │   └── docs/schema/entities.md #  CI-generated entity definitions (read-only)
 │   ├── storefront-app/            # → git submodule (frontend repo)
+│   │   ├── docs/routes.md         #   CI-generated route manifest (read-only)
+│   │   └── docs/consumed-endpoints.md # CI-generated API dependency manifest (read-only)
 │   └── ...
 ├── CLAUDE.md                      # AI agent entry point
 ├── CLAUDE.learnings.md            # Institutional memory (structured by category)
