@@ -110,6 +110,12 @@ Skills are reusable workflows that guide the AI agent through each SDD phase. Yo
 | `/plan`              | After the FS is approved — derive test scenarios and split into work packages           | `TS-XXX.md` + `WP-XXX-BE.md` / `WP-XXX-FE.md` |
 | `/implement`         | After WPs are approved — orchestrates execution across workspace repos                  | Code in workspace submodules                   |
 
+### Maintenance Skills
+
+| Skill                | When to use                                                                             | What it produces                              |
+|----------------------|-----------------------------------------------------------------------------------------|-----------------------------------------------|
+| `/workspace-context` | First-time setup, after major implementation phases, or when workspace docs are stale    | `CLAUDE.md` in each workspace repo            |
+
 ---
 
 ## Adding a Code Repo
