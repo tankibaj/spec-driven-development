@@ -106,9 +106,11 @@ This WP is self-contained. An implementer should be able to complete it reading 
 
 ## Related Contracts
 
-{Link to the OpenAPI specs this WP mocks against during development and testing.}
+{Link to the contract docs this WP references during development and testing.}
 
-- `workspaces/{service}/docs/api/openapi.json` (auto-generated, read-only) — {which operations are used}
+- `workspaces/{service}/docs/api/openapi.json` (auto-generated, read-only) — {which BE operations are consumed}
+- `workspaces/{app}/docs/routes.md` (auto-generated, read-only) — {which routes this WP adds or modifies}
+- `workspaces/{app}/docs/consumed-endpoints.md` (auto-generated, read-only) — {which BE endpoints the FE calls}
 
 **Mock strategy:** Use {Prism / MSW} against the auto-generated OpenAPI spec above during development. Switch to the real backend URL once WP-XXX-BE is deployed.
 

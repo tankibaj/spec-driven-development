@@ -61,7 +61,7 @@ These apply at every step:
 Stop and reassess if you catch yourself doing any of these:
 
 - Implementing features not described in the WP
-- Modifying files in `contracts/` or `plan/`
+- Modifying files in workspace `docs/` or `plan/`
 - Reading the FS or TS directly instead of the verbatim copies in the WP
 - Skipping TS scenarios because they seem redundant
 - Continuing past 3 failed fix attempts on the same issue
@@ -187,7 +187,7 @@ If you attempt to fix a failing test, type error, or linter error and fail **3 c
 ### Scope Enforcement
 
 - Do NOT add features, endpoints, or behaviors not in the WP.
-- Do NOT modify files in `plan/` or `contracts/` during implementation.
+- Do NOT modify files in `plan/` or workspace `docs/` during implementation.
 - Do NOT read the FS or TS directly — use the verbatim copies in the WP.
 - If you think something is missing from the WP, block and report. Do not fill the gap.
 

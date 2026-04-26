@@ -73,7 +73,7 @@ Validate before delegating anything. Run every check. Collect all failures — d
 
 | Check | How | Fail Action |
 |---|---|---|
-| Every contract referenced in WPs exists | Read each WP's "Relevant Contracts" section, verify file exists in `contracts/` | BLOCK |
+| Every contract referenced in WPs exists | Read each WP's "Relevant Contracts" section, verify file exists in workspace `docs/` | BLOCK |
 | Contract content matches WP excerpts | Spot-check key endpoints/schemas — the WP may reference a contract version that has since changed | WARN |
 
 #### Workspace Readiness
@@ -165,7 +165,7 @@ You are an executor implementing a single Work Package. Read and follow the exec
 
 - Do NOT read other WP files.
 - Do NOT read the FS or TS directly — use the verbatim copies in your WP.
-- Do NOT modify files in contracts/, spec/, or docs/ (except status.yaml checkpoints).
+- Do NOT modify files in spec/ or workspace docs/ (except status.yaml checkpoints).
 - Write ONLY your own phase_4.{WP-ID} entry in status.yaml.
 ```
 

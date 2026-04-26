@@ -191,6 +191,8 @@ Use one of these standardized patterns for the `Testable:` line:
 **Existing contracts:**
 - `workspaces/{service}/docs/api/openapi.json` (auto-generated, read-only)
 - `workspaces/{service}/docs/schema/entities.md` (auto-generated, read-only)
+- `workspaces/{app}/docs/routes.md` (auto-generated, read-only)
+- `workspaces/{app}/docs/consumed-endpoints.md` (auto-generated, read-only)
 - `docs/architecture/ADR-XXX.md` — {decision title}
 
 **Contract changes needed:**
